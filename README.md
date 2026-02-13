@@ -1,4 +1,4 @@
-# AI Vedic Kundali
+# Vedic Astra
 
 A sophisticated Vedic Astrology application that combines ancient Jyotish wisdom with modern AI to provide deep, personalized life insights.
 
@@ -23,8 +23,8 @@ A sophisticated Vedic Astrology application that combines ancient Jyotish wisdom
 
 1.  **Clone the repository**:
     ```bash
-    git clone https://github.com/akashdeepiim/ai-vedic-kundali.git
-    cd ai-vedic-kundali
+    git clone https://github.com/akashdeepiim/vedic-astra.git
+    cd vedic-astra
     ```
 
 2.  **Install dependencies**:
