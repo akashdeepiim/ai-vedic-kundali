@@ -93,13 +93,13 @@ export default function BirthForm() {
     return (
         <div className="w-full max-w-md mx-auto p-8 glass-card animate-in fade-in zoom-in duration-500">
             <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold heading-gradient mb-2">Generate Kundali</h2>
-                <p className="text-white/60 text-sm">Enter birth details for accurate Vedic calculations</p>
+                <h2 className="text-3xl font-bold heading-gradient mb-2">Your Birth Chart</h2>
+                <p className="text-white/60 text-sm">Enter your details below to get started</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
-                    <label className="text-xs uppercase tracking-wider text-white/50 font-semibold ml-1">Name (Optional)</label>
+                    <label className="text-xs uppercase tracking-wider text-white/50 font-semibold ml-1">Your Name</label>
                     <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <span className="text-white/40">✨</span>
@@ -117,7 +117,7 @@ export default function BirthForm() {
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <label className="text-xs uppercase tracking-wider text-white/50 font-semibold ml-1">Date</label>
+                        <label className="text-xs uppercase tracking-wider text-white/50 font-semibold ml-1">Birth Date</label>
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Calendar className="h-4 w-4 text-white/40" />
@@ -133,7 +133,7 @@ export default function BirthForm() {
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs uppercase tracking-wider text-white/50 font-semibold ml-1">Time</label>
+                        <label className="text-xs uppercase tracking-wider text-white/50 font-semibold ml-1">Birth Time</label>
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Clock className="h-4 w-4 text-white/40" />
@@ -153,7 +153,7 @@ export default function BirthForm() {
                 {/* Location Search Section */}
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <label className="text-xs uppercase tracking-wider text-white/50 font-semibold ml-1">City</label>
+                        <label className="text-xs uppercase tracking-wider text-white/50 font-semibold ml-1">Birth City</label>
                         <input
                             type="text"
                             name="city"
@@ -188,7 +188,7 @@ export default function BirthForm() {
                     ) : (
                         <>
                             <Search className="h-3 w-3" />
-                            Find Coordinates
+                            Find Location
                         </>
                     )}
                 </button>
@@ -236,7 +236,7 @@ export default function BirthForm() {
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-xs uppercase tracking-wider text-white/50 font-semibold ml-1">Timezone (Offset)</label>
+                    <label className="text-xs uppercase tracking-wider text-white/50 font-semibold ml-1">Timezone</label>
                     <select
                         name="timezone"
                         className="glass-input w-full [color-scheme:dark] bg-black/50"
@@ -263,7 +263,7 @@ export default function BirthForm() {
                     disabled={loading || !formData.lat}
                     className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
                 >
-                    {loading ? 'Calculating...' : 'Generate Horoscope'}
+                    {loading ? 'Calculating...' : 'Show My Chart'}
                 </button>
             </form>
         </div>

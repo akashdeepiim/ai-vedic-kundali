@@ -14,14 +14,14 @@ export default function Home() {
           Vedic Astra
         </h1>
         <p className="text-lg md:text-xl text-white/50 mt-2 font-light">
-          Classical Jyotish Intelligence Engine
+          Ancient Vedic Wisdom
         </p>
       </div>
 
       <BirthForm />
 
       <footer className="absolute bottom-4 text-center text-white/20 text-xs">
-        <p>Powered by Swiss-grade Astronomical Calculations</p>
+        <p>Powered by Precise Astronomy</p>
       </footer>
     </main>
   );
