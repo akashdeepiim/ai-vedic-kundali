@@ -8,6 +8,12 @@ interface AnalysisReportProps {
     data: KundaliResult;
 }
 
+interface TimelineEvent {
+    year: string;
+    title: string;
+    description: string;
+}
+
 interface AnalysisData {
     preliminary: string;
     career: string;
@@ -17,6 +23,7 @@ interface AnalysisData {
     week: string;
     month: string;
     year: string;
+    timeline?: TimelineEvent[];
 }
 
 export default function AnalysisReport({ data }: AnalysisReportProps) {
@@ -24,6 +31,7 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [playingSection, setPlayingSection] = useState<string | null>(null);
+    const [expandedEvent, setExpandedEvent] = useState<number | null>(null);
 
     const generateAnalysis = async () => {
         setLoading(true);
@@ -55,6 +63,14 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
 
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
+
+        // Select Indian Voice
+        const voices = window.speechSynthesis.getVoices();
+        const indianVoice = voices.find(v => v.lang.includes('en-IN') || v.name.includes('India'));
+        if (indianVoice) {
+            utterance.voice = indianVoice;
+        }
+
         utterance.onend = () => setPlayingSection(null);
         window.speechSynthesis.speak(utterance);
         setPlayingSection(sectionKey);
@@ -91,7 +107,7 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                 <h3 className="text-lg font-semibold text-white/90">{title}</h3>
             </div>
             <button
-                onClick={() => handleSpeak(text, sectionKey)}
+                onClick={(e) => { e.stopPropagation(); handleSpeak(text, sectionKey); }}
                 className={`p-2 rounded-full transition-all duration-300 ${playingSection === sectionKey ? 'bg-white/20 text-white animate-pulse' : 'text-white/40 hover:text-white hover:bg-white/10'}`}
                 title="Read Aloud"
             >
@@ -183,7 +199,7 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Month */}
-                    <div className="glass-card p-6 border-l-4 border-purple-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-purple-500/20">
+                    <div className="glass-card h-full p-6 border-l-4 border-purple-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-purple-500/20">
                         <SectionHeader
                             title="Monthly Overview"
                             icon={Moon}
@@ -195,7 +211,7 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                     </div>
 
                     {/* Year */}
-                    <div className="glass-card p-6 border-l-4 border-orange-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-orange-500/20">
+                    <div className="glass-card h-full p-6 border-l-4 border-orange-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-orange-500/20">
                         <SectionHeader
                             title="Yearly Projections"
                             icon={Sparkles}
@@ -206,6 +222,41 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                         <p className="text-white/80 leading-relaxed text-sm md:text-base">{report.year}</p>
                     </div>
                 </div>
+
+                {/* Major Life Events Timeline */}
+                {report.timeline && report.timeline.length > 0 && (
+                    <div className="glass-card p-6 border-l-4 border-cyan-500 shadow-lg hover:shadow-cyan-500/20">
+                        <SectionHeader
+                            title="Major Life Events Timeline (15 Years)"
+                            icon={Calendar}
+                            colorClass="text-cyan-400"
+                            sectionKey="timeline"
+                            text={report.timeline.map(e => `${e.year}: ${e.title}. ${e.description}`).join('. ')}
+                        />
+                        <div className="space-y-4">
+                            {report.timeline.map((event, index) => (
+                                <div
+                                    key={index}
+                                    onClick={() => setExpandedEvent(expandedEvent === index ? null : index)}
+                                    className={`relative pl-6 border-l-2 ${expandedEvent === index ? 'border-cyan-400 bg-white/5' : 'border-white/10 hover:border-cyan-400/50 hover:bg-white/5'} transition-all duration-300 cursor-pointer rounded-r-lg p-3`}
+                                >
+                                    <div className={`absolute -left-[9px] top-4 w-4 h-4 rounded-full border-2 ${expandedEvent === index ? 'bg-cyan-500 border-cyan-300' : 'bg-slate-900 border-white/20'}`}></div>
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <span className="text-cyan-300 font-mono text-sm font-bold">{event.year}</span>
+                                            <h4 className="text-white font-semibold text-lg">{event.title}</h4>
+                                        </div>
+                                        <span className="text-white/40 text-xs">{expandedEvent === index ? 'Collapse' : 'Expand'}</span>
+                                    </div>
+
+                                    <div className={`mt-2 text-white/80 text-sm leading-relaxed overflow-hidden transition-all duration-500 ${expandedEvent === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                                        {event.description}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
