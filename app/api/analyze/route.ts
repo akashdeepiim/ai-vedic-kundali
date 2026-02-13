@@ -1,17 +1,68 @@
-
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { z } from 'zod';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Zod Schema for Input Validation
+const ChartDataSchema = z.object({
+    dateString: z.string(),
+    timeString: z.string(),
+    lat: z.number(),
+    lng: z.number(),
+    timezone: z.number(),
+    chartData: z.any() // Adjust this if you have a stricter structure for chartData components
+}).passthrough(); // Allow other properties if chartData structure is dynamic but validate basics
+
+// Simple In-Memory Rate Limiter (Note: For production at scale, use Redis/Vercel KV)
+const rateLimitMap = new Map<string, { count: number, lastReset: number }>();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 5; // 5 requests per minute per IP
+
+function isRateLimited(ip: string): boolean {
+    const now = Date.now();
+    const record = rateLimitMap.get(ip) || { count: 0, lastReset: now };
+
+    if (now - record.lastReset > RATE_LIMIT_WINDOW) {
+        record.count = 0;
+        record.lastReset = now;
+    }
+
+    if (record.count >= MAX_REQUESTS) {
+        return true;
+    }
+
+    record.count++;
+    rateLimitMap.set(ip, record);
+    return false;
+}
+
 export async function POST(request: Request) {
     try {
-        const { chartData } = await request.json();
+        // 1. Rate Limiting
+        const ip = request.headers.get('x-forwarded-for') || 'unknown';
+        if (isRateLimited(ip)) {
+            return NextResponse.json(
+                { error: 'Too many requests. Please try again later.' },
+                { status: 429 }
+            );
+        }
+
+        // 2. Input Validation
+        const body = await request.json();
+        // Since original code destructured { chartData }, we validate that wrapper or the inner data
+        // The previous code did: const { chartData } = await request.json();
+        // So we expect body to have chartData.
+
+        if (!body.chartData) {
+            return NextResponse.json({ error: 'Missing chartData' }, { status: 400 });
+        }
 
         if (!process.env.OPENAI_API_KEY) {
-            return NextResponse.json({ error: 'OpenAI API Key missing' }, { status: 500 });
+            console.error('OpenAI API Key missing on server');
+            return NextResponse.json({ error: 'Internal Server Configuration Error' }, { status: 500 });
         }
 
         const systemPrompt = `You are an expert Vedic Astrologer with deep knowledge of Parashara Hora Sastra and Jaimini Sutras. 
@@ -65,7 +116,7 @@ export async function POST(request: Request) {
             model: "gpt-3.5-turbo",
             messages: [
                 { role: "system", content: systemPrompt },
-                { role: "user", content: JSON.stringify(chartData) }
+                { role: "user", content: JSON.stringify(body.chartData) }
             ],
             response_format: { type: "json_object" },
             temperature: 0.3,
@@ -77,10 +128,12 @@ export async function POST(request: Request) {
         return NextResponse.json(JSON.parse(content));
 
     } catch (error: any) {
+        // 3. Secure Error Handling (Don't leak stack traces to client)
         console.error('Analysis error:', error);
+
+        // Return generic error message to client
         return NextResponse.json({
-            error: 'Failed to generate analysis',
-            details: error instanceof Error ? error.message : String(error)
+            error: 'An unexpected error occurred during analysis.',
         }, { status: 500 });
     }
 }
