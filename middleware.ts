@@ -15,6 +15,7 @@ export function middleware(request: NextRequest) {
     frame-ancestors 'none';
     block-all-mixed-content;
     upgrade-insecure-requests;
+    connect-src 'self' https://nominatim.openstreetmap.org;
 `;
     // Replace newline characters and extra spaces
     const contentSecurityPolicyHeaderValue = cspHeader
