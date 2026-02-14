@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { KundaliResult } from '@/lib/astrology/types';
-import { Sparkles, Calendar, Sun, Moon, Star, Briefcase, Heart, Users, Volume2, Square } from 'lucide-react';
+import { Sparkles, Calendar, Sun, Moon, Star, Briefcase, Heart, Users, Volume2, Square, Activity, DollarSign, Palette, Home, History } from 'lucide-react';
 
 interface AnalysisReportProps {
     data: KundaliResult;
@@ -17,6 +17,10 @@ interface TimelineEvent {
 interface AnalysisData {
     preliminary: string;
     career: string;
+    health: string;
+    wealth: string;
+    passion: string;
+    family: string;
     love: string;
     marriage: string;
     today: string;
@@ -24,6 +28,7 @@ interface AnalysisData {
     month: string;
     year: string;
     timeline?: TimelineEvent[];
+    past_timeline?: TimelineEvent[];
 }
 
 export default function AnalysisReport({ data }: AnalysisReportProps) {
@@ -146,6 +151,54 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                         <p className="text-white/80 leading-relaxed text-sm md:text-base">{report.career}</p>
                     </div>
 
+                    {/* Wealth */}
+                    <div className="glass-card p-6 border-l-4 border-yellow-600 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-yellow-600/20">
+                        <SectionHeader
+                            title="Wealth & Finance"
+                            icon={DollarSign}
+                            colorClass="text-yellow-500"
+                            sectionKey="wealth"
+                            text={report.wealth}
+                        />
+                        <p className="text-white/80 leading-relaxed text-sm md:text-base">{report.wealth}</p>
+                    </div>
+
+                    {/* Health */}
+                    <div className="glass-card p-6 border-l-4 border-red-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-red-500/20">
+                        <SectionHeader
+                            title="Health & Well-being"
+                            icon={Activity}
+                            colorClass="text-red-400"
+                            sectionKey="health"
+                            text={report.health}
+                        />
+                        <p className="text-white/80 leading-relaxed text-sm md:text-base">{report.health}</p>
+                    </div>
+
+                    {/* Family */}
+                    <div className="glass-card p-6 border-l-4 border-orange-400 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-orange-400/20">
+                        <SectionHeader
+                            title="Family & Home"
+                            icon={Home}
+                            colorClass="text-orange-300"
+                            sectionKey="family"
+                            text={report.family}
+                        />
+                        <p className="text-white/80 leading-relaxed text-sm md:text-base">{report.family}</p>
+                    </div>
+
+                    {/* Passion */}
+                    <div className="glass-card p-6 border-l-4 border-purple-400 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-purple-400/20">
+                        <SectionHeader
+                            title="Passion & Hobbies"
+                            icon={Palette}
+                            colorClass="text-purple-300"
+                            sectionKey="passion"
+                            text={report.passion}
+                        />
+                        <p className="text-white/80 leading-relaxed text-sm md:text-base">{report.passion}</p>
+                    </div>
+
                     {/* Love */}
                     <div className="glass-card p-6 border-l-4 border-pink-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-pink-500/20">
                         <SectionHeader
@@ -223,41 +276,71 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                     </div>
                 </div>
 
-                {/* Major Life Events Timeline */}
-                {report.timeline && report.timeline.length > 0 && (
-                    <div className="glass-card p-6 border-l-4 border-cyan-500 shadow-lg hover:shadow-cyan-500/20">
-                        <SectionHeader
-                            title="Major Life Events Timeline (15 Years)"
-                            icon={Calendar}
-                            colorClass="text-cyan-400"
-                            sectionKey="timeline"
-                            text={report.timeline.map(e => `${e.year}: ${e.title}. ${e.description}`).join('. ')}
-                        />
-                        <div className="space-y-4">
-                            {report.timeline.map((event, index) => (
-                                <div
-                                    key={index}
-                                    onClick={() => setExpandedEvent(expandedEvent === index ? null : index)}
-                                    className={`relative pl-6 border-l-2 ${expandedEvent === index ? 'border-cyan-400 bg-white/5' : 'border-white/10 hover:border-cyan-400/50 hover:bg-white/5'} transition-all duration-300 cursor-pointer rounded-r-lg p-3`}
-                                >
-                                    <div className={`absolute -left-[9px] top-4 w-4 h-4 rounded-full border-2 ${expandedEvent === index ? 'bg-cyan-500 border-cyan-300' : 'bg-slate-900 border-white/20'}`}></div>
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <span className="text-cyan-300 font-mono text-sm font-bold">{event.year}</span>
-                                            <h4 className="text-white font-semibold text-lg">{event.title}</h4>
-                                        </div>
-                                        <span className="text-white/40 text-xs">{expandedEvent === index ? 'Collapse' : 'Expand'}</span>
-                                    </div>
-
-                                    <div className={`mt-2 text-white/80 text-sm leading-relaxed overflow-hidden transition-all duration-500 ${expandedEvent === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                                        {event.description}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
             </div>
+
+            {/* Past Life Events Timeline */}
+            {report.past_timeline && report.past_timeline.length > 0 && (
+                <div className="glass-card p-6 border-l-4 border-slate-500 shadow-lg hover:shadow-slate-500/20">
+                    <SectionHeader
+                        title="Past Significant Events (Verify Accuracy)"
+                        icon={History}
+                        colorClass="text-slate-400"
+                        sectionKey="past_timeline"
+                        text={report.past_timeline.map(e => `${e.year}: ${e.title}. ${e.description}`).join('. ')}
+                    />
+                    <div className="space-y-4">
+                        {report.past_timeline.map((event, index) => (
+                            <div
+                                key={index}
+                                className="relative pl-6 border-l-2 border-white/10 hover:border-slate-400/50 hover:bg-white/5 transition-all duration-300 rounded-r-lg p-3"
+                            >
+                                <div className="absolute -left-[9px] top-4 w-4 h-4 rounded-full border-2 bg-slate-700 border-white/20"></div>
+                                <div className="flex flex-col">
+                                    <span className="text-slate-300 font-mono text-sm font-bold">{event.year}</span>
+                                    <h4 className="text-white font-semibold text-lg">{event.title}</h4>
+                                    <p className="text-white/70 text-sm mt-1">{event.description}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Major Life Events Timeline */}
+            {report.timeline && report.timeline.length > 0 && (
+                <div className="glass-card p-6 border-l-4 border-cyan-500 shadow-lg hover:shadow-cyan-500/20">
+                    <SectionHeader
+                        title="Major Life Events Timeline (15 Years)"
+                        icon={Calendar}
+                        colorClass="text-cyan-400"
+                        sectionKey="timeline"
+                        text={report.timeline.map(e => `${e.year}: ${e.title}. ${e.description}`).join('. ')}
+                    />
+                    <div className="space-y-4">
+                        {report.timeline.map((event, index) => (
+                            <div
+                                key={index}
+                                onClick={() => setExpandedEvent(expandedEvent === index ? null : index)}
+                                className={`relative pl-6 border-l-2 ${expandedEvent === index ? 'border-cyan-400 bg-white/5' : 'border-white/10 hover:border-cyan-400/50 hover:bg-white/5'} transition-all duration-300 cursor-pointer rounded-r-lg p-3`}
+                            >
+                                <div className={`absolute -left-[9px] top-4 w-4 h-4 rounded-full border-2 ${expandedEvent === index ? 'bg-cyan-500 border-cyan-300' : 'bg-slate-900 border-white/20'}`}></div>
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <span className="text-cyan-300 font-mono text-sm font-bold">{event.year}</span>
+                                        <h4 className="text-white font-semibold text-lg">{event.title}</h4>
+                                    </div>
+                                    <span className="text-white/40 text-xs">{expandedEvent === index ? 'Collapse' : 'Expand'}</span>
+                                </div>
+
+                                <div className={`mt-2 text-white/80 text-sm leading-relaxed overflow-hidden transition-all duration-500 ${expandedEvent === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                                    {event.description}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
+        </div >
     );
 }

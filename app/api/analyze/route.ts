@@ -73,12 +73,16 @@ export async function POST(request: Request) {
         1. YOU MUST PROVIDE SPECIFIC TIME FRAMES (e.g., "From March 2026 to August 2026") for all predictions. 
         2. Base your analysis on specific Planetary Transits (Gochar - Saturn, Jupiter, Rahu/Ketu) and Vimshottari Dasha periods. 
         3. Avoid generic statements. Be precise.
-        4. OUTPUT FORMAT: A flat JSON object where EVERY value is a STRING (formatted with Markdown). DO NOT return nested objects.
+        4. OUTPUT FORMAT: A flat JSON object where EVERY value is a STRING (formatted with Markdown), except for timelines which are arrays.
         
         Output strictly as valid JSON:
         {
             "preliminary": "Deep analysis of personality...",
             "career": "In-depth career forecast with TIME FRAMES...",
+            "health": "Detailed health analysis pointing out potential weak areas or periods of concern...",
+            "wealth": "Financial outlook, wealth accumulation potential, and periods of gain/loss...",
+            "passion": "Analysis of creative pursuits, hobbies, and areas of deep interest...",
+            "family": "Insights into family life, relationship with parents/siblings, and domestic harmony...",
             "love": "Detailed relationship analysis with DATES...",
             "marriage": "Conclusive marriage analysis with TIMING...",
             "today": "Precise daily outlook...",
@@ -87,7 +91,7 @@ export async function POST(request: Request) {
             "year": "Comprehensive yearly projection broken down by quarters. MUST BE A SINGLE STRING."
         }
 
-        Tone: Professional, Authoritative অথচ Empathetic. Use clear, accessible language.
+        Tone: Professional, Authoritative yet Empathetic. Use clear, accessible language.
         Length: Extensive. Each section must be 3-4 detailed paragraphs.
         
         Current Date: ${new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}. 
@@ -98,12 +102,21 @@ export async function POST(request: Request) {
         - DO NOT generate predictions for dates beyond 2050 unless specifically discussing longevity or distant spiritual milestones.
         - Ensure "Yearly Projections" starts specifically with the current year (2026).
 
-        ADDITIONAL FORMAT REQUIREMENT:
+        ADDITIONAL FORMAT REQUIREMENTS:
+
+        1. Future Timeline:
         Include a "timeline" key with a list of 5-7 Major Life Events expected in the next 15 years.
         Format:
         "timeline": [
             { "year": "2027", "title": "Career Rise", "description": "Detailed explanation of why..." },
             { "year": "2029", "title": "Relocation", "description": "Analysis of change in residence..." }
+        ]
+
+        2. Past Significant Events:
+        Include a "past_timeline" key with a list of 3-5 Major Life Events that likely happened in the last 5-10 years based on Dasha/Transits.
+        Format:
+        "past_timeline": [
+            { "year": "2023", "title": "Job Change", "description": "Likely period of change due to..." }
         ]
         
         CONSISTENCY RULE:
