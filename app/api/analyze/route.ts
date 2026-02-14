@@ -75,7 +75,7 @@ export async function POST(request: Request) {
         3. Avoid generic statements. Be precise.
         4. OUTPUT FORMAT: A flat JSON object where EVERY value is a STRING (formatted with Markdown), except for timelines which are arrays.
         
-        Output strictly as valid JSON:
+        Output strictly as valid JSON with ALL of the following keys (every key is MANDATORY, do NOT skip any):
         {
             "preliminary": "Deep analysis of personality...",
             "career": "In-depth career forecast with TIME FRAMES...",
@@ -88,7 +88,9 @@ export async function POST(request: Request) {
             "today": "Precise daily outlook...",
             "week": "Weekly forecast...",
             "month": "Monthly overview...",
-            "year": "Comprehensive yearly projection broken down by quarters. MUST BE A SINGLE STRING."
+            "year": "Comprehensive yearly projection broken down by quarters. MUST BE A SINGLE STRING.",
+            "past_timeline": [{"year": "...", "title": "...", "description": "..."}],
+            "timeline": [{"year": "...", "title": "...", "description": "..."}]
         }
 
         Tone: Professional, Authoritative yet Empathetic. Use clear, accessible language.
@@ -102,21 +104,25 @@ export async function POST(request: Request) {
         - DO NOT generate predictions for dates beyond 2050 unless specifically discussing longevity or distant spiritual milestones.
         - Ensure "Yearly Projections" starts specifically with the current year (2026).
 
-        ADDITIONAL FORMAT REQUIREMENTS:
+        CRITICAL - MANDATORY TIMELINE REQUIREMENTS (YOU MUST INCLUDE THESE):
 
-        1. Future Timeline:
-        Include a "timeline" key with a list of 5-7 Major Life Events expected in the next 15 years.
-        Format:
+        1. "past_timeline" (REQUIRED - NEVER OMIT):
+        You MUST include a "past_timeline" key with EXACTLY 3-5 Major Life Events that likely happened in the last 5-10 years based on Dasha/Transits.
+        Each item MUST have: { "year": "YYYY", "title": "Short Title", "description": "Detailed explanation" }
+        Example:
+        "past_timeline": [
+            { "year": "2018", "title": "Career Shift", "description": "Due to Saturn transit..." },
+            { "year": "2020", "title": "Health Challenge", "description": "Mars-Rahu conjunction..." },
+            { "year": "2023", "title": "Financial Growth", "description": "Jupiter's aspect on 2nd house..." }
+        ]
+
+        2. "timeline" (REQUIRED - NEVER OMIT):
+        You MUST include a "timeline" key with EXACTLY 5-7 Major Life Events expected in the next 15 years.
+        Each item MUST have: { "year": "YYYY", "title": "Short Title", "description": "Detailed explanation" }
+        Example:
         "timeline": [
             { "year": "2027", "title": "Career Rise", "description": "Detailed explanation of why..." },
             { "year": "2029", "title": "Relocation", "description": "Analysis of change in residence..." }
-        ]
-
-        2. Past Significant Events:
-        Include a "past_timeline" key with a list of 3-5 Major Life Events that likely happened in the last 5-10 years based on Dasha/Transits.
-        Format:
-        "past_timeline": [
-            { "year": "2023", "title": "Job Change", "description": "Likely period of change due to..." }
         ]
         
         CONSISTENCY RULE:
@@ -126,7 +132,7 @@ export async function POST(request: Request) {
         - Do not halluncinate planetary positions. Use the provided data faithfully.`;
 
         const completion = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
+            model: "gpt-4o-mini",
             messages: [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: JSON.stringify(body.chartData) }

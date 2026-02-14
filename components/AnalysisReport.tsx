@@ -341,6 +341,6 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                 </div>
             )}
         </div>
-        </div >
+
     );
 }
