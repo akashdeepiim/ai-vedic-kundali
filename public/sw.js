@@ -8,6 +8,6 @@ self.addEventListener('activate', (event) => {
     event.waitUntil(self.clients.claim());
 });
 
-self.addEventListener('fetch', (event) => {
+self.addEventListener('fetch', () => {
     // No-op for now, just pass through
 });

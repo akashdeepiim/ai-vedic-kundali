@@ -1,73 +1,93 @@
-
 import { NextResponse } from 'next/server';
 import tzlookup from 'tz-lookup';
+import { z } from 'zod';
+
+const TimezoneRequestSchema = z.object({
+    lat: z.coerce.number().finite().min(-90).max(90),
+    lon: z.coerce.number().finite().min(-180).max(180),
+    dateString: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    timeString: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+});
+
+function getOffsetHours(timeZoneId: string, instant: Date): number {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: timeZoneId,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hourCycle: 'h23',
+    });
+    const parts = formatter.formatToParts(instant);
+    const partValue = (type: Intl.DateTimeFormatPartTypes) => {
+        const value = parts.find(p => p.type === type)?.value;
+        if (!value) throw new Error(`Unable to resolve ${type} in ${timeZoneId}`);
+        return Number(value);
+    };
+
+    const localAsUtc = Date.UTC(
+        partValue('year'),
+        partValue('month') - 1,
+        partValue('day'),
+        partValue('hour'),
+        partValue('minute'),
+        partValue('second')
+    );
+
+    return (localAsUtc - instant.getTime()) / 3600000;
+}
+
+function getOffsetForLocalWallTime(timeZoneId: string, dateString?: string, timeString?: string): number {
+    if (!dateString) return getOffsetHours(timeZoneId, new Date());
+
+    const [year, month, day] = dateString.split('-').map(Number);
+    const [hour, minute] = (timeString ?? '12:00').split(':').map(Number);
+    const localAsUtc = Date.UTC(year, month - 1, day, hour, minute, 0);
+    let guessUtc = localAsUtc - getOffsetHours(timeZoneId, new Date(localAsUtc)) * 3600000;
+
+    for (let i = 0; i < 3; i++) {
+        const offset = getOffsetHours(timeZoneId, new Date(guessUtc));
+        guessUtc = localAsUtc - offset * 3600000;
+    }
+
+    return getOffsetHours(timeZoneId, new Date(guessUtc));
+}
 
 export async function POST(request: Request) {
     try {
-        const { lat, lon, dateString, timeString } = await request.json();
+        const parsed = TimezoneRequestSchema.safeParse(await request.json());
 
-        if (!lat || !lon) {
-            return NextResponse.json({ error: 'Missing coordinates' }, { status: 400 });
+        if (!parsed.success) {
+            return NextResponse.json({
+                error: 'Invalid timezone lookup input',
+                details: parsed.error.issues.map(issue => ({
+                    field: issue.path.join('.'),
+                    message: issue.message,
+                })),
+            }, { status: 400 });
         }
+
+        const { lat, lon, dateString, timeString } = parsed.data;
 
         // Get Timezone ID (e.g. "Asia/Kolkata")
-        const timeZoneId = tzlookup(Number(lat), Number(lon));
-
-        // Create a date object for the specific time in that timezone
-        // We use the provided date/time strings or fallback to now
-        let date;
-        if (dateString && timeString) {
-            date = new Date(`${dateString}T${timeString}:00`);
-        } else if (dateString) {
-            date = new Date(dateString);
-        } else {
-            date = new Date();
-        }
-
-        // Calculate Offset
-        // We can use Intl.DateTimeFormat to get the offset string for that specific date in that timezone
-        // The format "GMT+5:30" or "GMT-5" is what we want to parse, or better, getting minutes
-
-        // Strategy: Get the UTC string and the locale string, compare? 
-        // Or simpler: Use standard JS getThinking...
-
-        // Actually, easiest robust way without Moment/Luxon:
-        // Create date in target timezone and UTC, compare timestamps? No, timestamp is same.
-        // Compare "formatted" strings.
-
-        const strInTz = date.toLocaleString('en-US', { timeZone: timeZoneId });
-        const dateInTz = new Date(strInTz);
-
-        // This 'dateInTz' has the values of the target timezone but is created as a "local system" or "UTC" object?
-        // This approach handles offsets tricky. 
-
-        // Better: Use Intl.DateTimeFormat with 'timeZoneName: "longOffset"' (e.g. "GMT-05:00")
-        const formatter = new Intl.DateTimeFormat('en-US', {
-            timeZone: timeZoneId,
-            timeZoneName: 'longOffset'
-        });
-
-        const parts = formatter.formatToParts(date);
-        const offsetPart = parts.find(p => p.type === 'timeZoneName');
-
-        let offset = 0;
-        if (offsetPart) {
-            // value is like "GMT-05:00" or "GMT+05:30"
-            const val = offsetPart.value.replace('GMT', '');
-            // format is ±HH:mm
-            const sign = val.includes('-') ? -1 : 1;
-            const [h, m] = val.replace('+', '').replace('-', '').split(':').map(Number);
-            offset = sign * (h + (m || 0) / 60);
-        }
+        const timeZoneId = tzlookup(lat, lon);
+        const offset = getOffsetForLocalWallTime(timeZoneId, dateString, timeString);
+        const sign = offset < 0 ? '-' : '+';
+        const abs = Math.abs(offset);
+        const hours = Math.floor(abs).toString().padStart(2, '0');
+        const minutes = Math.round((abs % 1) * 60).toString().padStart(2, '0');
 
         return NextResponse.json({
             timeZoneId,
             offset, // number e.g. 5.5 or -5
-            formatted: offsetPart?.value
+            formatted: `GMT${sign}${hours}:${minutes}`
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Timezone error:', error);
-        return NextResponse.json({ error: error.message || 'Failed to get timezone' }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Failed to get timezone';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

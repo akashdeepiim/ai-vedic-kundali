@@ -2,12 +2,18 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, Clock, MapPin, Globe, Search } from 'lucide-react';
+import { Calendar, Clock, MapPin, Globe, Search, SlidersHorizontal } from 'lucide-react';
+import {
+    DEFAULT_ANALYSIS_PREFERENCES,
+    OPTIONAL_FEATURE_OPTIONS,
+    type OptionalFeature
+} from '@/lib/analysis-options';
 
 export default function BirthForm() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+    const [selectedFeatures, setSelectedFeatures] = useState<OptionalFeature[]>([]);
     const [formData, setFormData] = useState({
         name: '',
         dateString: '',
@@ -17,10 +23,19 @@ export default function BirthForm() {
         lat: '',
         lon: '',
         timezone: '5.5', // Default IST
+        timeZoneId: '',
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const toggleFeature = (feature: OptionalFeature) => {
+        setSelectedFeatures(prev =>
+            prev.includes(feature)
+                ? prev.filter(item => item !== feature)
+                : [...prev, feature]
+        );
     };
 
     const handleLocationSearch = async () => {
@@ -44,6 +59,7 @@ export default function BirthForm() {
                 try {
                     const tzRes = await fetch('/api/timezone', {
                         method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             lat,
                             lon,
@@ -53,7 +69,13 @@ export default function BirthForm() {
                     });
                     const tzData = await tzRes.json();
                     if (tzData.offset !== undefined) {
-                        setFormData(prev => ({ ...prev, lat, lon, timezone: String(tzData.offset) }));
+                        setFormData(prev => ({
+                            ...prev,
+                            lat,
+                            lon,
+                            timezone: String(tzData.offset),
+                            timeZoneId: tzData.timeZoneId || prev.timeZoneId,
+                        }));
                     }
                 } catch (err) {
                     console.error("Failed to fetch timezone:", err);
@@ -84,6 +106,10 @@ export default function BirthForm() {
 
         // Save to local storage to pass to results page
         localStorage.setItem('birthDetails', JSON.stringify(formData));
+        localStorage.setItem('analysisPreferences', JSON.stringify({
+            ...DEFAULT_ANALYSIS_PREFERENCES,
+            optionalFeatures: selectedFeatures,
+        }));
 
         // Simulate delay for effect? No, just push.
         router.push('/kundali');
@@ -91,7 +117,7 @@ export default function BirthForm() {
     };
 
     return (
-        <div className="w-full max-w-md mx-auto p-8 glass-card animate-in fade-in zoom-in duration-500">
+        <div className="w-full max-w-xl mx-auto p-8 glass-card animate-in fade-in zoom-in duration-500">
             <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold heading-gradient mb-2">Your Birth Chart</h2>
                 <p className="text-white/60 text-sm">Enter your details below to get started</p>
@@ -193,7 +219,7 @@ export default function BirthForm() {
                     )}
                 </button>
 
-                {/* Hidden/Read-only Lat/Lon for verification */}
+                {/* Coordinates are editable so users can correct geocoding misses. */}
                 <div className="grid grid-cols-2 gap-4 opacity-70">
                     <div className="space-y-2">
                         <label className="text-xs uppercase tracking-wider text-white/30 font-semibold ml-1">Latitude</label>
@@ -207,8 +233,7 @@ export default function BirthForm() {
                                 name="lat"
                                 placeholder="Lat"
                                 required
-                                readOnly
-                                className="glass-input w-full pl-10 bg-black/20 cursor-not-allowed"
+                                className="glass-input w-full pl-10"
                                 value={formData.lat}
                                 onChange={handleChange}
                             />
@@ -226,8 +251,7 @@ export default function BirthForm() {
                                 name="lon"
                                 placeholder="Lon"
                                 required
-                                readOnly
-                                className="glass-input w-full pl-10 bg-black/20 cursor-not-allowed"
+                                className="glass-input w-full pl-10"
                                 value={formData.lon}
                                 onChange={handleChange}
                             />
@@ -256,6 +280,38 @@ export default function BirthForm() {
                             <option value={formData.timezone}>Auto: {formData.timezone}</option>
                         )}
                     </select>
+                    {formData.timeZoneId && (
+                        <p className="text-[11px] text-white/35">Detected: {formData.timeZoneId}</p>
+                    )}
+                </div>
+
+                <div className="space-y-3 rounded-lg border border-white/10 bg-white/[0.03] p-4">
+                    <div className="flex items-start gap-2">
+                        <SlidersHorizontal className="h-4 w-4 text-purple-300 mt-0.5" />
+                        <div>
+                            <h3 className="text-sm font-semibold text-white/85">Optional modules</h3>
+                            <p className="text-xs text-white/45">Choose areas you may want included later. These do not block chart generation.</p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                        {OPTIONAL_FEATURE_OPTIONS.map(option => (
+                            <label
+                                key={option.id}
+                                className="flex items-start gap-3 rounded-md border border-white/10 bg-black/10 p-3 hover:bg-white/[0.04] cursor-pointer"
+                            >
+                                <input
+                                    type="checkbox"
+                                    className="mt-1 accent-purple-500"
+                                    checked={selectedFeatures.includes(option.id)}
+                                    onChange={() => toggleFeature(option.id)}
+                                />
+                                <span>
+                                    <span className="block text-xs font-semibold text-white/80">{option.label}</span>
+                                    <span className="block text-[11px] text-white/40 leading-relaxed">{option.description}</span>
+                                </span>
+                            </label>
+                        ))}
+                    </div>
                 </div>
 
                 <button

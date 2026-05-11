@@ -25,7 +25,7 @@ export default function PrivacyPolicy() {
                         <strong>Transient Processing:</strong> Your birth details are used <em>solely</em> for the purpose of calculating your astrological chart and generating the AI report.
                     </p>
                     <p>
-                        <strong>Third-Party Processing:</strong> To provide the interpretation, your chart data (planetary positions, not your PII like name) is sent to OpenAI's API. OpenAI extracts the astrological insights which are then returned to you.
+                        <strong>Third-Party Processing:</strong> To provide the interpretation, your chart data (planetary positions, not your PII like name) is sent to OpenAI&apos;s API. OpenAI extracts the astrological insights which are then returned to you.
                     </p>
 
                     <h2 className="text-2xl font-semibold text-white mt-8">Data Storage</h2>

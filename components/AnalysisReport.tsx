@@ -1,11 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { KundaliResult } from '@/lib/astrology/types';
-import { Sparkles, Calendar, Sun, Moon, Star, Briefcase, Heart, Users, Volume2, Square, Activity, DollarSign, Palette, Home, History } from 'lucide-react';
+import { Sparkles, Calendar, Sun, Moon, Star, Briefcase, Heart, Users, Volume2, Square, Activity, DollarSign, Palette, Home, History, Download, Settings2, type LucideIcon } from 'lucide-react';
+import {
+    ANALYSIS_SYSTEM_OPTIONS,
+    getAnalysisSystemLabel,
+    getOptionalFeatureLabel,
+    type AnalysisPreferences,
+    type AnalysisSystem
+} from '@/lib/analysis-options';
 
 interface AnalysisReportProps {
     data: KundaliResult;
+    preferences: AnalysisPreferences;
+    onPreferencesChange: (preferences: AnalysisPreferences) => void;
 }
 
 interface TimelineEvent {
@@ -31,12 +40,40 @@ interface AnalysisData {
     past_timeline?: TimelineEvent[];
 }
 
-export default function AnalysisReport({ data }: AnalysisReportProps) {
+const REPORT_SECTION_COUNT = 14;
+
+export default function AnalysisReport({ data, preferences, onPreferencesChange }: AnalysisReportProps) {
     const [report, setReport] = useState<AnalysisData | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [playingSection, setPlayingSection] = useState<string | null>(null);
     const [expandedEvent, setExpandedEvent] = useState<number | null>(null);
+    const [visibleSections, setVisibleSections] = useState(0);
+
+    useEffect(() => {
+        if (!report) return;
+
+        setVisibleSections(0);
+        const interval = window.setInterval(() => {
+            setVisibleSections(prev => {
+                if (prev >= REPORT_SECTION_COUNT) {
+                    window.clearInterval(interval);
+                    return prev;
+                }
+                return prev + 1;
+            });
+        }, 180);
+
+        return () => window.clearInterval(interval);
+    }, [report]);
+
+    const updateAnalysisSystem = (analysisSystem: AnalysisSystem) => {
+        const next = { ...preferences, analysisSystem };
+        onPreferencesChange(next);
+        localStorage.setItem('analysisPreferences', JSON.stringify(next));
+        setReport(null);
+        setVisibleSections(0);
+    };
 
     const generateAnalysis = async () => {
         setLoading(true);
@@ -45,17 +82,38 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
             const res = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chartData: data })
+                body: JSON.stringify({ chartData: data, preferences })
             });
 
-            if (!res.ok) throw new Error('Failed to generate analysis');
+            if (!res.ok) {
+                const payload = await res.json().catch(() => null);
+                throw new Error(payload?.error || 'Failed to generate analysis');
+            }
             const result = await res.json();
             setReport(result);
         } catch (err) {
-            setError('Failed to consult the stars. Please try again.');
+            setError(err instanceof Error ? err.message : 'Failed to consult the stars. Please try again.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const downloadPdf = () => {
+        if (!report) return;
+        const pdfBytes = createReportPdf({
+            title: `Vedic Astra Report${data.birthDetails.name ? ` - ${data.birthDetails.name}` : ''}`,
+            subtitle: `${data.birthDetails.dateString} ${data.birthDetails.timeString} | ${getAnalysisSystemLabel(preferences.analysisSystem)}`,
+            lines: buildPdfLines(report, data, preferences),
+        });
+        const pdfBuffer = new ArrayBuffer(pdfBytes.byteLength);
+        new Uint8Array(pdfBuffer).set(pdfBytes);
+        const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `vedic-astra-report-${data.birthDetails.name || data.birthDetails.dateString}.pdf`;
+        link.click();
+        URL.revokeObjectURL(url);
     };
 
     // TTS Handler
@@ -83,7 +141,55 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
 
     if (!report) {
         return (
-            <div className="w-full flex justify-center py-8">
+            <div className="space-y-6 py-8">
+                <div className="glass-card p-6 border-l-4 border-indigo-500">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Settings2 className="h-5 w-5 text-indigo-300" />
+                        <div>
+                            <h2 className="text-lg font-semibold text-white/90">Analysis System</h2>
+                            <p className="text-sm text-white/45">Choose the reading lens before generating the full report.</p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {ANALYSIS_SYSTEM_OPTIONS.map(option => (
+                            <label
+                                key={option.id}
+                                className={`rounded-lg border p-3 cursor-pointer transition-colors ${preferences.analysisSystem === option.id
+                                    ? 'border-indigo-400/70 bg-indigo-500/15'
+                                    : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.06]'
+                                    }`}
+                            >
+                                <div className="flex gap-3">
+                                    <input
+                                        type="radio"
+                                        name="analysisSystem"
+                                        className="mt-1 accent-indigo-500"
+                                        checked={preferences.analysisSystem === option.id}
+                                        onChange={() => updateAnalysisSystem(option.id)}
+                                    />
+                                    <span>
+                                        <span className="block text-sm font-semibold text-white/85">{option.label}</span>
+                                        <span className="block text-xs text-white/45 leading-relaxed">{option.description}</span>
+                                    </span>
+                                </div>
+                            </label>
+                        ))}
+                    </div>
+                    {preferences.optionalFeatures.length > 0 && (
+                        <div className="mt-4 rounded-lg border border-white/10 bg-black/10 p-3">
+                            <p className="text-xs uppercase tracking-wider text-white/40 font-semibold mb-2">Requested optional modules</p>
+                            <div className="flex flex-wrap gap-2">
+                                {preferences.optionalFeatures.map(feature => (
+                                    <span key={feature} className="rounded-full bg-white/10 px-3 py-1 text-xs text-white/70">
+                                        {getOptionalFeatureLabel(feature)}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <div className="w-full flex flex-col items-center justify-center">
                 <button
                     onClick={generateAnalysis}
                     disabled={loading}
@@ -101,11 +207,12 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                     </span>
                 </button>
                 {error && <p className="text-red-400 mt-2">{error}</p>}
+                </div>
             </div>
         );
     }
 
-    const SectionHeader = ({ title, icon: Icon, colorClass, sectionKey, text }: { title: string, icon: any, colorClass: string, sectionKey: string, text: string }) => (
+    const SectionHeader = ({ title, icon: Icon, colorClass, sectionKey, text }: { title: string, icon: LucideIcon, colorClass: string, sectionKey: string, text: string }) => (
         <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
                 <Icon className={`w-6 h-6 ${colorClass}`} />
@@ -121,13 +228,58 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
         </div>
     );
 
+    const EvidenceText = ({ text }: { text: string }) => {
+        const basisMatch = text.match(/(?:\*\*)?Chart basis(?:\*\*)?\s*:/i);
+        const insightMatch = text.match(/(?:\*\*)?Usable insight(?:\*\*)?\s*:/i);
+
+        if (!basisMatch || !insightMatch || insightMatch.index === undefined || basisMatch.index === undefined || insightMatch.index <= basisMatch.index) {
+            return <p className="text-white/80 leading-relaxed whitespace-pre-line text-sm md:text-base">{text}</p>;
+        }
+
+        const basisStart = basisMatch.index + basisMatch[0].length;
+        const insightStart = insightMatch.index + insightMatch[0].length;
+        const preface = text.slice(0, basisMatch.index).trim();
+        const basis = text.slice(basisStart, insightMatch.index).trim();
+        const insight = text.slice(insightStart).trim();
+
+        return (
+            <div className="space-y-4 text-sm md:text-base">
+                {preface && <p className="text-white/70 leading-relaxed whitespace-pre-line">{preface}</p>}
+                <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+                    <div className="text-[11px] uppercase tracking-wider text-white/40 font-semibold mb-2">Chart Basis</div>
+                    <p className="text-white/75 leading-relaxed whitespace-pre-line">{basis}</p>
+                </div>
+                <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/[0.05] p-4">
+                    <div className="text-[11px] uppercase tracking-wider text-emerald-300/80 font-semibold mb-2">Usable Insight</div>
+                    <p className="text-white/85 leading-relaxed whitespace-pre-line">{insight}</p>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <h2 className="text-2xl font-bold heading-gradient text-center mb-8">Vedic Analysis Report</h2>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h2 className="text-2xl font-bold heading-gradient">Vedic Analysis Report</h2>
+                    <p className="text-sm text-white/45">
+                        System: {getAnalysisSystemLabel(preferences.analysisSystem)}
+                        {preferences.optionalFeatures.length > 0 && ` | Optional modules: ${preferences.optionalFeatures.map(getOptionalFeatureLabel).join(', ')}`}
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    onClick={downloadPdf}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/75 hover:bg-white/[0.08]"
+                >
+                    <Download className="h-4 w-4" />
+                    Download PDF
+                </button>
+            </div>
 
             <div className="grid gap-6">
                 {/* Preliminary Analysis */}
-                <div className="glass-card p-6 border-l-4 border-indigo-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-indigo-500/20">
+                {visibleSections >= 1 && <div className="glass-card p-6 border-l-4 border-indigo-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-indigo-500/20 animate-in fade-in slide-in-from-bottom-2">
                     <SectionHeader
                         title="Prarabdha (Destiny) & Personality"
                         icon={Star}
@@ -135,12 +287,12 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                         sectionKey="preliminary"
                         text={report.preliminary}
                     />
-                    <p className="text-white/80 leading-relaxed whitespace-pre-line text-sm md:text-base">{report.preliminary}</p>
-                </div>
+                    <EvidenceText text={report.preliminary} />
+                </div>}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Career */}
-                    <div className="glass-card p-6 border-l-4 border-emerald-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-emerald-500/20">
+                    {visibleSections >= 2 && <div className="glass-card p-6 border-l-4 border-emerald-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-emerald-500/20 animate-in fade-in slide-in-from-bottom-2">
                         <SectionHeader
                             title="Career & Profession"
                             icon={Briefcase}
@@ -148,11 +300,11 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                             sectionKey="career"
                             text={report.career}
                         />
-                        <p className="text-white/80 leading-relaxed text-sm md:text-base">{report.career}</p>
-                    </div>
+                        <EvidenceText text={report.career} />
+                    </div>}
 
                     {/* Wealth */}
-                    <div className="glass-card p-6 border-l-4 border-yellow-600 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-yellow-600/20">
+                    {visibleSections >= 3 && <div className="glass-card p-6 border-l-4 border-yellow-600 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-yellow-600/20 animate-in fade-in slide-in-from-bottom-2">
                         <SectionHeader
                             title="Wealth & Finance"
                             icon={DollarSign}
@@ -160,11 +312,11 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                             sectionKey="wealth"
                             text={report.wealth}
                         />
-                        <p className="text-white/80 leading-relaxed text-sm md:text-base">{report.wealth}</p>
-                    </div>
+                        <EvidenceText text={report.wealth} />
+                    </div>}
 
                     {/* Health */}
-                    <div className="glass-card p-6 border-l-4 border-red-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-red-500/20">
+                    {visibleSections >= 4 && <div className="glass-card p-6 border-l-4 border-red-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-red-500/20 animate-in fade-in slide-in-from-bottom-2">
                         <SectionHeader
                             title="Health & Well-being"
                             icon={Activity}
@@ -172,11 +324,11 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                             sectionKey="health"
                             text={report.health}
                         />
-                        <p className="text-white/80 leading-relaxed text-sm md:text-base">{report.health}</p>
-                    </div>
+                        <EvidenceText text={report.health} />
+                    </div>}
 
                     {/* Family */}
-                    <div className="glass-card p-6 border-l-4 border-orange-400 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-orange-400/20">
+                    {visibleSections >= 5 && <div className="glass-card p-6 border-l-4 border-orange-400 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-orange-400/20 animate-in fade-in slide-in-from-bottom-2">
                         <SectionHeader
                             title="Family & Home"
                             icon={Home}
@@ -184,11 +336,11 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                             sectionKey="family"
                             text={report.family}
                         />
-                        <p className="text-white/80 leading-relaxed text-sm md:text-base">{report.family}</p>
-                    </div>
+                        <EvidenceText text={report.family} />
+                    </div>}
 
                     {/* Passion */}
-                    <div className="glass-card p-6 border-l-4 border-purple-400 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-purple-400/20">
+                    {visibleSections >= 6 && <div className="glass-card p-6 border-l-4 border-purple-400 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-purple-400/20 animate-in fade-in slide-in-from-bottom-2">
                         <SectionHeader
                             title="Passion & Hobbies"
                             icon={Palette}
@@ -196,11 +348,11 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                             sectionKey="passion"
                             text={report.passion}
                         />
-                        <p className="text-white/80 leading-relaxed text-sm md:text-base">{report.passion}</p>
-                    </div>
+                        <EvidenceText text={report.passion} />
+                    </div>}
 
                     {/* Love */}
-                    <div className="glass-card p-6 border-l-4 border-pink-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-pink-500/20">
+                    {visibleSections >= 7 && <div className="glass-card p-6 border-l-4 border-pink-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-pink-500/20 animate-in fade-in slide-in-from-bottom-2">
                         <SectionHeader
                             title="Love & Relationships"
                             icon={Heart}
@@ -208,11 +360,11 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                             sectionKey="love"
                             text={report.love}
                         />
-                        <p className="text-white/80 leading-relaxed text-sm md:text-base">{report.love}</p>
-                    </div>
+                        <EvidenceText text={report.love} />
+                    </div>}
 
                     {/* Marriage */}
-                    <div className="glass-card p-6 border-l-4 border-rose-500 md:col-span-2 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-rose-500/20">
+                    {visibleSections >= 8 && <div className="glass-card p-6 border-l-4 border-rose-500 md:col-span-2 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-rose-500/20 animate-in fade-in slide-in-from-bottom-2">
                         <SectionHeader
                             title="Marriage & Spouse"
                             icon={Users}
@@ -220,13 +372,13 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                             sectionKey="marriage"
                             text={report.marriage}
                         />
-                        <p className="text-white/80 leading-relaxed text-sm md:text-base">{report.marriage}</p>
-                    </div>
+                        <EvidenceText text={report.marriage} />
+                    </div>}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Today */}
-                    <div className="glass-card p-6 border-l-4 border-yellow-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-yellow-500/20">
+                    {visibleSections >= 9 && <div className="glass-card p-6 border-l-4 border-yellow-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-yellow-500/20 animate-in fade-in slide-in-from-bottom-2">
                         <SectionHeader
                             title="Daily Outlook (Today)"
                             icon={Sun}
@@ -234,11 +386,11 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                             sectionKey="today"
                             text={report.today}
                         />
-                        <p className="text-white/80 leading-relaxed text-sm md:text-base">{report.today}</p>
-                    </div>
+                        <EvidenceText text={report.today} />
+                    </div>}
 
                     {/* Week */}
-                    <div className="glass-card p-6 border-l-4 border-blue-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-blue-500/20">
+                    {visibleSections >= 10 && <div className="glass-card p-6 border-l-4 border-blue-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-blue-500/20 animate-in fade-in slide-in-from-bottom-2">
                         <SectionHeader
                             title="Weekly Forecast"
                             icon={Calendar}
@@ -246,13 +398,13 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                             sectionKey="week"
                             text={report.week}
                         />
-                        <p className="text-white/80 leading-relaxed text-sm md:text-base">{report.week}</p>
-                    </div>
+                        <EvidenceText text={report.week} />
+                    </div>}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Month */}
-                    <div className="glass-card h-full p-6 border-l-4 border-purple-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-purple-500/20">
+                    {visibleSections >= 11 && <div className="glass-card h-full p-6 border-l-4 border-purple-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-purple-500/20 animate-in fade-in slide-in-from-bottom-2">
                         <SectionHeader
                             title="Monthly Overview"
                             icon={Moon}
@@ -260,11 +412,11 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                             sectionKey="month"
                             text={report.month}
                         />
-                        <p className="text-white/80 leading-relaxed text-sm md:text-base">{report.month}</p>
-                    </div>
+                        <EvidenceText text={report.month} />
+                    </div>}
 
                     {/* Year */}
-                    <div className="glass-card h-full p-6 border-l-4 border-orange-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-orange-500/20">
+                    {visibleSections >= 12 && <div className="glass-card h-full p-6 border-l-4 border-orange-500 hover:scale-[1.01] transition-transform duration-300 shadow-lg hover:shadow-orange-500/20 animate-in fade-in slide-in-from-bottom-2">
                         <SectionHeader
                             title="Yearly Projections"
                             icon={Sparkles}
@@ -272,17 +424,17 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                             sectionKey="year"
                             text={report.year}
                         />
-                        <p className="text-white/80 leading-relaxed text-sm md:text-base">{report.year}</p>
-                    </div>
+                        <EvidenceText text={report.year} />
+                    </div>}
                 </div>
 
             </div>
 
-            {/* Past Life Events Timeline */}
-            {report.past_timeline && report.past_timeline.length > 0 && (
-                <div className="glass-card p-6 border-l-4 border-slate-500 shadow-lg hover:shadow-slate-500/20">
+            {/* Past Windows Timeline */}
+            {visibleSections >= 13 && report.past_timeline && report.past_timeline.length > 0 && (
+                <div className="glass-card p-6 border-l-4 border-slate-500 shadow-lg hover:shadow-slate-500/20 animate-in fade-in slide-in-from-bottom-2">
                     <SectionHeader
-                        title="Past Significant Events (Verify Accuracy)"
+                        title="Past Windows To Verify"
                         icon={History}
                         colorClass="text-slate-400"
                         sectionKey="past_timeline"
@@ -298,7 +450,9 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                                 <div className="flex flex-col">
                                     <span className="text-slate-300 font-mono text-sm font-bold">{event.year}</span>
                                     <h4 className="text-white font-semibold text-lg">{event.title}</h4>
-                                    <p className="text-white/70 text-sm mt-1">{event.description}</p>
+                                    <div className="mt-3">
+                                        <EvidenceText text={event.description} />
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -306,11 +460,11 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                 </div>
             )}
 
-            {/* Major Life Events Timeline */}
-            {report.timeline && report.timeline.length > 0 && (
-                <div className="glass-card p-6 border-l-4 border-cyan-500 shadow-lg hover:shadow-cyan-500/20">
+            {/* Future Windows Timeline */}
+            {visibleSections >= 14 && report.timeline && report.timeline.length > 0 && (
+                <div className="glass-card p-6 border-l-4 border-cyan-500 shadow-lg hover:shadow-cyan-500/20 animate-in fade-in slide-in-from-bottom-2">
                     <SectionHeader
-                        title="Major Life Events Timeline (15 Years)"
+                        title="Future Windows Timeline"
                         icon={Calendar}
                         colorClass="text-cyan-400"
                         sectionKey="timeline"
@@ -332,8 +486,8 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
                                     <span className="text-white/40 text-xs">{expandedEvent === index ? 'Collapse' : 'Expand'}</span>
                                 </div>
 
-                                <div className={`mt-2 text-white/80 text-sm leading-relaxed overflow-hidden transition-all duration-500 ${expandedEvent === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                                    {event.description}
+                                <div className={`mt-2 overflow-hidden transition-all duration-500 ${expandedEvent === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                                    <EvidenceText text={event.description} />
                                 </div>
                             </div>
                         ))}
@@ -343,4 +497,167 @@ export default function AnalysisReport({ data }: AnalysisReportProps) {
         </div>
 
     );
+}
+
+function stripMarkdown(text: string): string {
+    return text
+        .replace(/\*\*/g, '')
+        .replace(/#{1,6}\s/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function wrapText(text: string, width = 92): string[] {
+    const words = stripMarkdown(text).split(' ');
+    const lines: string[] = [];
+    let current = '';
+
+    words.forEach(word => {
+        if ((current + ' ' + word).trim().length > width) {
+            if (current) lines.push(current);
+            current = word;
+        } else {
+            current = `${current} ${word}`.trim();
+        }
+    });
+
+    if (current) lines.push(current);
+    return lines;
+}
+
+function pushSection(lines: string[], title: string, body: string) {
+    lines.push('');
+    lines.push(title.toUpperCase());
+    lines.push(...wrapText(body));
+}
+
+function buildPdfLines(report: AnalysisData, data: KundaliResult, preferences: AnalysisPreferences): string[] {
+    const lines = [
+        `Name: ${data.birthDetails.name || 'Not provided'}`,
+        `Birth: ${data.birthDetails.dateString} ${data.birthDetails.timeString}`,
+        `System: ${getAnalysisSystemLabel(preferences.analysisSystem)}`,
+        `Chart style: ${preferences.chartStyle}`,
+        `Current dasha: ${data.dasha.current || 'Not available'}`,
+        `Transits: ${data.transits.summary.join('; ')}`,
+    ];
+
+    if (preferences.optionalFeatures.length > 0) {
+        lines.push(`Optional modules requested: ${preferences.optionalFeatures.map(getOptionalFeatureLabel).join(', ')}`);
+    }
+
+    pushSection(lines, 'Prarabdha and Personality', report.preliminary);
+    pushSection(lines, 'Career and Profession', report.career);
+    pushSection(lines, 'Wealth and Finance', report.wealth);
+    pushSection(lines, 'Health and Well-being', report.health);
+    pushSection(lines, 'Family and Home', report.family);
+    pushSection(lines, 'Passion and Hobbies', report.passion);
+    pushSection(lines, 'Love and Relationships', report.love);
+    pushSection(lines, 'Marriage and Spouse', report.marriage);
+    pushSection(lines, 'Daily Outlook', report.today);
+    pushSection(lines, 'Weekly Forecast', report.week);
+    pushSection(lines, 'Monthly Overview', report.month);
+    pushSection(lines, 'Yearly Projection', report.year);
+
+    if (report.past_timeline?.length) {
+        lines.push('');
+        lines.push('PAST WINDOWS TO VERIFY');
+        report.past_timeline.forEach(item => {
+            lines.push(`${item.year} - ${item.title}`);
+            lines.push(...wrapText(item.description));
+        });
+    }
+
+    if (report.timeline?.length) {
+        lines.push('');
+        lines.push('FUTURE WINDOWS TIMELINE');
+        report.timeline.forEach(item => {
+            lines.push(`${item.year} - ${item.title}`);
+            lines.push(...wrapText(item.description));
+        });
+    }
+
+    lines.push('');
+    lines.push('Calculation note: This report uses the app chart data and current transit snapshot. Methods requiring dedicated engines, such as KP cusps, full Panchang, Muhurta search, Shadbala, Ashtakavarga, and rule-based Yoga/Dosha detection, are not treated as fully calculated unless explicitly present.');
+
+    return lines;
+}
+
+function escapePdfText(text: string): string {
+    return text
+        .replace(/\\/g, '\\\\')
+        .replace(/\(/g, '\\(')
+        .replace(/\)/g, '\\)')
+        .replace(/[^\x20-\x7E]/g, '');
+}
+
+function createReportPdf({ title, subtitle, lines }: { title: string; subtitle: string; lines: string[] }): Uint8Array {
+    const pageLineCount = 42;
+    const pages: string[][] = [];
+    let current: string[] = [];
+
+    lines.forEach(line => {
+        if (current.length >= pageLineCount) {
+            pages.push(current);
+            current = [];
+        }
+        current.push(line);
+    });
+    if (current.length) pages.push(current);
+
+    const objects: string[] = [];
+    const addObject = (body: string) => {
+        objects.push(body);
+        return objects.length;
+    };
+
+    const catalogId = addObject('<< /Type /Catalog /Pages 2 0 R >>');
+    const pageIds: number[] = [];
+    const fontId = 3;
+
+    addObject(''); // Pages placeholder
+    addObject('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+
+    pages.forEach((pageLines, index) => {
+        const commands = [
+            'BT',
+            '/F1 16 Tf',
+            '50 790 Td',
+            `(${escapePdfText(title)}) Tj`,
+            '/F1 9 Tf',
+            '0 -16 Td',
+            `(${escapePdfText(subtitle)}) Tj`,
+            '0 -18 Td',
+            `(${escapePdfText(`Page ${index + 1} of ${pages.length}`)}) Tj`,
+            '/F1 10 Tf',
+            '0 -24 Td',
+            ...pageLines.flatMap(line => [
+                `(${escapePdfText(line)}) Tj`,
+                '0 -13 Td',
+            ]),
+            'ET',
+        ].join('\n');
+
+        const contentId = addObject(`<< /Length ${commands.length} >>\nstream\n${commands}\nendstream`);
+        const pageId = addObject(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${contentId} 0 R >>`);
+        pageIds.push(pageId);
+    });
+
+    objects[1] = `<< /Type /Pages /Kids [${pageIds.map(id => `${id} 0 R`).join(' ')}] /Count ${pageIds.length} >>`;
+
+    let pdf = '%PDF-1.4\n';
+    const offsets: number[] = [0];
+    objects.forEach((body, index) => {
+        offsets.push(pdf.length);
+        pdf += `${index + 1} 0 obj\n${body}\nendobj\n`;
+    });
+
+    const xrefOffset = pdf.length;
+    pdf += `xref\n0 ${objects.length + 1}\n`;
+    pdf += '0000000000 65535 f \n';
+    for (let i = 1; i <= objects.length; i++) {
+        pdf += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+    }
+    pdf += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+    return new TextEncoder().encode(pdf);
 }

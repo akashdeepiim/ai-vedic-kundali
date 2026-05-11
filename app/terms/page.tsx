@@ -22,7 +22,7 @@ export default function TermsOfUse() {
 
                     <h2 className="text-2xl font-semibold text-white mt-8">3. Disclaimer of Warranties</h2>
                     <p>
-                        The service is provided "as is" and "as available" without any warranties of any kind. We explicitly disclaim any warranties of fitness for a particular purpose or non-infringement.
+                        The service is provided &quot;as is&quot; and &quot;as available&quot; without any warranties of any kind. We explicitly disclaim any warranties of fitness for a particular purpose or non-infringement.
                     </p>
                     <p>
                         <strong>Crucially:</strong> You acknowledge that the astrological reports are for entertainment only and do not constitute professional advice.

@@ -47,18 +47,26 @@ export default function ChatInterface({ chartData }: ChatInterfaceProps) {
                         planets: chartData.planets,
                         dasha: chartData.dasha,
                         houses: chartData.houses, // might be large, maybe strip planets lists
-                        ascendant: chartData.ascendant
+                        ascendant: chartData.ascendant,
+                        age: chartData.age,
+                        lifeStage: chartData.lifeStage,
+                        transits: chartData.transits,
+                        metadata: chartData.metadata,
                     },
                     messages: [...messages, userMsg]
                 })
             });
 
-            if (!res.ok) throw new Error('Failed');
+            if (!res.ok) {
+                const payload = await res.json().catch(() => null);
+                throw new Error(payload?.error || 'Failed');
+            }
 
             const data = await res.json();
             setMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
-        } catch (e) {
-            setMessages(prev => [...prev, { role: 'assistant', content: 'Connection to the cosmos interrupted. Please try again.' }]);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Connection to the cosmos interrupted. Please try again.';
+            setMessages(prev => [...prev, { role: 'assistant', content: message }]);
         } finally {
             setLoading(false);
         }

@@ -8,6 +8,8 @@ export type PlanetName =
   | 'Jupiter' | 'Venus' | 'Saturn' | 'Rahu' | 'Ketu' 
   | 'Uranus' | 'Neptune' | 'Pluto' | 'Ascendant';
 
+export type Dignity = 'Exalted' | 'Debilitated' | 'Own Sign' | 'Mooltrikona' | 'Friendly' | 'Neutral' | 'Enemy';
+
 export interface PlanetPosition {
   name: PlanetName;
   longitude: number; // 0-360
@@ -20,7 +22,18 @@ export interface PlanetPosition {
   pada: number;
   house: number; // 1-12
   isRetrograde: boolean;
-  dignity?: 'Exalted' | 'Debilitated' | 'Own Sign' | 'Friendly' | 'Neutral' | 'Enemy';
+  dignity?: Dignity;
+  isCombust?: boolean;
+  degreeInSign?: number; // 0-30, degree within the sign
+}
+
+export interface DashaPeriod {
+  lord: PlanetName;
+  startDate: string; // ISO date string for serialization
+  endDate: string;   // ISO date string for serialization
+  durationYears: number;
+  isCurrent?: boolean;
+  subPeriods?: DashaPeriod[]; // Antardasha
 }
 
 export interface HouseSystem {
@@ -39,6 +52,40 @@ export interface BirthDetails {
   lat: number;
   lon: number;
   timezone: number; // Offset in hours
+  name?: string;
+  city?: string;
+  country?: string;
+  timeZoneId?: string; // IANA timezone, preferred when available
+}
+
+export interface TransitPosition {
+  name: PlanetName;
+  longitude: number;
+  sign: ZodiacSign;
+  degreeInSign: number;
+  nakshatra: string;
+  pada: number;
+  houseFromAscendant: number;
+  isRetrograde: boolean;
+}
+
+export interface TransitContext {
+  calculatedAt: string;
+  ayanamsa: number;
+  planets: TransitPosition[];
+  summary: string[];
+  limitations: string[];
+}
+
+export interface CalculationMetadata {
+  birthUtc: string;
+  timezoneOffsetHours: number;
+  timeZoneId?: string;
+  ayanamsaModel: 'Approximate Lahiri';
+  houseSystem: 'Whole Sign';
+  nodeType: 'Mean Lunar Node';
+  ephemerisSource: 'astronomy-engine';
+  accuracyNotes: string[];
 }
 
 export interface KundaliResult {
@@ -51,9 +98,16 @@ export interface KundaliResult {
   vargas: {
     D1: PlanetPosition[]; // Rasi
     D9: PlanetPosition[]; // Navamsa
+    D9Ascendant: PlanetPosition; // Navamsa Ascendant (properly computed)
   };
   dasha: {
-    current: string;
-    list: any[]; // To be defined detailed
+    current: string;       // Human-readable current period description
+    currentLord: string;   // Current Mahadasha lord
+    currentSubLord: string; // Current Antardasha lord
+    list: DashaPeriod[];
   };
+  age: number; // Computed age of the person
+  lifeStage: string; // infant, child, teenager, young_adult, adult, middle_aged, senior
+  transits: TransitContext;
+  metadata: CalculationMetadata;
 }
