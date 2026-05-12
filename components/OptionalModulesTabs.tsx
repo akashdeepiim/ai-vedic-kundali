@@ -6,9 +6,7 @@ import {
     BadgeCheck,
     CalendarClock,
     ChartNoAxesCombined,
-    CheckCircle2,
     HeartHandshake,
-    ListChecks,
     RotateCcw,
     Scale,
     ShieldAlert,
@@ -91,7 +89,7 @@ const PARTNER_BIRTH_FIELDS: ModuleField[] = [
 const MODULE_DEFINITIONS: Record<OptionalFeature, ModuleDefinition> = {
     kundli_matching: {
         icon: HeartHandshake,
-        subtitle: 'Independent compatibility engine',
+        subtitle: 'Compatibility reading',
         flowGoal: 'Generate both charts directly, then score Ashtakoota and Manglik compatibility without depending on the main birth-chart flow.',
         supportedNow: ['Primary and partner chart generation', 'Ashtakoota scoring', 'Manglik cross-check', 'Compatibility risk summary'],
         calculationScope: ['Varna, Vashya, Tara, Yoni, Graha Maitri, Gana, Bhakoot, Nadi', 'Mars placement from Lagna, Moon, and Venus', 'Moon sign and nakshatra evidence'],
@@ -110,7 +108,7 @@ const MODULE_DEFINITIONS: Record<OptionalFeature, ModuleDefinition> = {
     },
     panchang_muhurta: {
         icon: CalendarClock,
-        subtitle: 'Independent Panchang screening engine',
+        subtitle: 'Panchang timing review',
         flowGoal: 'Evaluate a date window for Panchang suitability using event location and timing inputs.',
         supportedNow: ['Tithi', 'Paksha', 'Nakshatra', 'Yoga', 'Weekday', 'Date-window scoring'],
         calculationScope: ['Sidereal Sun and Moon positions', 'Simplified auspiciousness score', 'Top candidate dates with cautions'],
@@ -133,7 +131,7 @@ const MODULE_DEFINITIONS: Record<OptionalFeature, ModuleDefinition> = {
     },
     dosha_analysis: {
         icon: ShieldAlert,
-        subtitle: 'Independent dosha engine',
+        subtitle: 'Dosha review',
         flowGoal: 'Generate the primary chart directly and run deterministic Manglik, Kaal Sarp, and Sade Sati screens.',
         supportedNow: ['Manglik from Lagna, Moon, Venus', 'Kaal Sarp containment screen', 'Sade Sati from current Saturn transit', 'Pressure score'],
         calculationScope: ['Mars relative houses', 'Rahu-Ketu axis containment', 'Transit Saturn relative to natal Moon'],
@@ -151,7 +149,7 @@ const MODULE_DEFINITIONS: Record<OptionalFeature, ModuleDefinition> = {
     },
     more_varga_charts: {
         icon: ChartNoAxesCombined,
-        subtitle: 'Independent varga placement engine',
+        subtitle: 'Divisional chart reading',
         flowGoal: 'Generate the primary chart directly and compute requested divisional sign placements.',
         supportedNow: ['D2, D3, D7, D10, D12, D16, D24, D30, D60 placement screens', 'Question-to-varga mapping', 'Cross-chart caution notes'],
         calculationScope: ['Sidereal longitude division', 'Planetary sign placement by varga', 'Varga strength screen'],
@@ -170,7 +168,7 @@ const MODULE_DEFINITIONS: Record<OptionalFeature, ModuleDefinition> = {
     },
     yoga_detection: {
         icon: BadgeCheck,
-        subtitle: 'Independent yoga detection engine',
+        subtitle: 'Yoga review',
         flowGoal: 'Generate the primary chart directly and detect rule-based yoga candidates with activation cautions.',
         supportedNow: ['Gaja Kesari', 'Raja Yoga candidates', 'Dhana Yoga candidates', 'Neecha Bhanga checks', 'Activation screen'],
         calculationScope: ['House lordship', 'Kendra/trikona relations', 'Moon-Jupiter angularity', 'Debilitation cancellation checks'],
@@ -188,7 +186,7 @@ const MODULE_DEFINITIONS: Record<OptionalFeature, ModuleDefinition> = {
     },
     shadbala_ashtakavarga: {
         icon: Scale,
-        subtitle: 'Independent strength-screen engine',
+        subtitle: 'Strength review',
         flowGoal: 'Generate the primary chart directly and produce a transparent planetary strength screen without overclaiming exact Shadbala/BAV bindus.',
         supportedNow: ['Planetary dignity strength', 'Combustion and retrograde flags', 'House environment adjustment', 'Current transit context'],
         calculationScope: ['Composite strength score', 'Strongest and weakest planets', 'Transit support from natal Lagna'],
@@ -382,7 +380,7 @@ export default function OptionalModulesTabs() {
                 [moduleKey(module, 'module_brief_updated_at')]: new Date().toISOString(),
             };
             persistModuleInputs(nextInputs);
-            setValidationMessage('Calculation complete. This module is ready for independent review and main-report context.');
+            setValidationMessage('Calculation complete. Review the detailed analysis below.');
 
             if (!preferences.optionalFeatures.includes(module)) {
                 persistPreferences({ ...preferences, optionalFeatures: [...preferences.optionalFeatures, module] });
@@ -427,8 +425,6 @@ export default function OptionalModulesTabs() {
     const Icon = definition.icon;
     const enabled = preferences.optionalFeatures.includes(active);
     const missingRequired = getMissingRequired(active, moduleInputs);
-    const moduleBrief = moduleInputs[moduleKey(active, 'module_brief')] ?? '';
-    const updatedAt = moduleInputs[moduleKey(active, 'module_brief_updated_at')];
     const result = moduleResults[active];
 
     return (
@@ -468,13 +464,7 @@ export default function OptionalModulesTabs() {
                     </div>
                 </div>
 
-                <div className="mt-5 grid grid-cols-1 lg:grid-cols-[0.75fr_1.25fr] gap-4">
-                    <aside className="space-y-4">
-                        <ModuleInfo title="Calculation engine" items={definition.supportedNow} tone="emerald" />
-                        <ModuleInfo title="Scope and evidence" items={definition.calculationScope} tone="purple" />
-                        {result && <ResultSummary result={result} compact />}
-                    </aside>
-
+                <div className="mt-5">
                     <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3 sm:p-4">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
                             <div>
@@ -534,30 +524,6 @@ export default function OptionalModulesTabs() {
                         </div>
 
                         {result && <ResultSummary result={result} />}
-
-                        <div className="mt-5 rounded-lg border border-white/10 bg-black/15 p-4">
-                            <div className="flex items-center justify-between gap-3 mb-3">
-                                <h3 className="text-sm font-semibold text-white/85">Main Analysis Context</h3>
-                                {moduleBrief && (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/15 px-2 py-1 text-[11px] text-emerald-300">
-                                        <CheckCircle2 className="h-3 w-3" />
-                                        Saved
-                                    </span>
-                                )}
-                            </div>
-                            {moduleBrief ? (
-                                <div className="space-y-3">
-                                    <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-md bg-black/25 p-3 text-xs leading-relaxed text-white/65">
-                                        {moduleBrief}
-                                    </pre>
-                                    {updatedAt && <p className="text-[11px] text-white/35">Last updated {new Date(updatedAt).toLocaleString()}</p>}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-white/45 leading-relaxed">
-                                    Run the module calculation to create a validated context brief for the detailed analysis.
-                                </p>
-                            )}
-                        </div>
                     </div>
                 </div>
             </div>
@@ -622,23 +588,14 @@ function ModuleFieldControl({
     );
 }
 
-function ResultSummary({ result, compact = false }: { result: ModuleCalculationResult; compact?: boolean }) {
+function ResultSummary({ result }: { result: ModuleCalculationResult }) {
     const statusClass = {
         favorable: 'border-emerald-400/20 bg-emerald-400/[0.05] text-emerald-200',
         neutral: 'border-white/10 bg-white/[0.03] text-white/70',
         caution: 'border-amber-400/20 bg-amber-400/[0.06] text-amber-200',
         unsupported: 'border-red-400/20 bg-red-400/[0.06] text-red-200',
     };
-
-    if (compact) {
-        return (
-            <div className="rounded-lg border border-white/10 bg-black/15 p-4">
-                <div className="text-[11px] uppercase tracking-wider text-emerald-300/80 font-semibold mb-2">Latest Result</div>
-                <p className="text-sm text-white/75 leading-relaxed">{result.summary}</p>
-                {result.score && <p className="mt-2 text-xs text-white/45">{result.score.label}: {result.score.score}/{result.score.max}</p>}
-            </div>
-        );
-    }
+    const detailedAnalysis = buildFriendlyAnalysis(result);
 
     return (
         <div className="mt-5 rounded-lg border border-white/10 bg-black/15 p-3 sm:p-4">
@@ -678,13 +635,83 @@ function ResultSummary({ result, compact = false }: { result: ModuleCalculationR
                 ))}
             </div>
 
-            <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
-                <ResultList title="Calculation Details" items={result.calculationDetails} />
-                <ResultList title="Limitations" items={result.limitations} />
-                <ResultList title="Next Steps" items={result.nextSteps} />
+            <div className="mt-5 rounded-lg border border-indigo-400/20 bg-indigo-400/[0.05] p-4">
+                <div className="text-[11px] uppercase tracking-wider text-indigo-200/80 font-semibold mb-2">Detailed Analysis</div>
+                <h4 className="text-base font-semibold text-white/90">{detailedAnalysis.headline}</h4>
+                <div className="mt-3 space-y-3">
+                    {detailedAnalysis.paragraphs.map(paragraph => (
+                        <p key={paragraph} className="text-sm text-white/70 leading-relaxed">{paragraph}</p>
+                    ))}
+                </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <ResultList title="What To Do Next" items={result.nextSteps} />
+                <ResultList title="Important Caveats" items={result.limitations} />
             </div>
         </div>
     );
+}
+
+function buildFriendlyAnalysis(result: ModuleCalculationResult): { headline: string; paragraphs: string[] } {
+    const scoreText = result.score ? `${result.score.score} out of ${result.score.max}` : '';
+    const cautionCount = result.insights.filter(insight => insight.status === 'caution').length;
+    const favorableCount = result.insights.filter(insight => insight.status === 'favorable').length;
+    const strongestInsight = result.insights.find(insight => insight.status === 'favorable') ?? result.insights[0];
+    const cautionInsight = result.insights.find(insight => insight.status === 'caution');
+
+    const moduleCopy: Record<OptionalFeature, { headline: string; intro: string }> = {
+        kundli_matching: {
+            headline: 'Compatibility Summary',
+            intro: scoreText
+                ? `The matching result is ${scoreText}. Treat this as a structured compatibility screen, not a final yes-or-no decision.`
+                : 'The matching result should be read as a structured compatibility screen, not a final yes-or-no decision.',
+        },
+        panchang_muhurta: {
+            headline: 'Timing Summary',
+            intro: scoreText
+                ? `The best candidate date scored ${scoreText}. This means it looks useful for shortlisting, while final timing should still consider family constraints and activity-specific rules.`
+                : 'The date window has been screened so you can shortlist better timing candidates.',
+        },
+        dosha_analysis: {
+            headline: 'Dosha Summary',
+            intro: scoreText
+                ? `The dosha pressure screen is ${scoreText}. A higher number means more caution flags to review, not a fixed negative outcome.`
+                : 'The dosha result highlights pressure areas to review carefully without treating them as fixed outcomes.',
+        },
+        more_varga_charts: {
+            headline: 'Varga Summary',
+            intro: 'The divisional chart result shows where the requested life area needs closer attention across supporting charts.',
+        },
+        yoga_detection: {
+            headline: 'Yoga Summary',
+            intro: scoreText
+                ? `The yoga activation screen is ${scoreText}. This points to how strongly the detected combinations appear in this simplified rule screen.`
+                : 'The yoga result identifies candidate combinations that deserve deeper review.',
+        },
+        shadbala_ashtakavarga: {
+            headline: 'Strength Summary',
+            intro: scoreText
+                ? `The strength screen is ${scoreText}. Use it to spot relatively stronger and weaker chart factors rather than as an absolute destiny score.`
+                : 'The strength result helps identify which chart factors appear more supported or strained.',
+        },
+    };
+
+    const copy = moduleCopy[result.module];
+    const balance = cautionCount > 0
+        ? `There ${cautionCount === 1 ? 'is' : 'are'} ${cautionCount} caution ${cautionCount === 1 ? 'area' : 'areas'} in the result. Start there first, because those are the parts most likely to need context, timing review, or practical judgement.`
+        : `The result does not show a major caution flag in this screen. That is useful, but it should still be read alongside the full chart and the real-life question.`;
+    const support = strongestInsight
+        ? `The most supportive signal is "${strongestInsight.title}": ${strongestInsight.detail}`
+        : 'No single supportive signal dominates the result, so read the output as a balanced review.';
+    const caution = cautionInsight
+        ? `The main area to handle carefully is "${cautionInsight.title}": ${cautionInsight.detail}`
+        : `There ${favorableCount === 1 ? 'is' : 'are'} ${favorableCount} supportive ${favorableCount === 1 ? 'indicator' : 'indicators'} in this module. Use them as directional guidance rather than a guarantee.`;
+
+    return {
+        headline: copy.headline,
+        paragraphs: [copy.intro, support, caution, balance],
+    };
 }
 
 function ResultList({ title, items }: { title: string; items: string[] }) {
@@ -693,23 +720,6 @@ function ResultList({ title, items }: { title: string; items: string[] }) {
             <div className="text-[11px] uppercase tracking-wider text-white/40 font-semibold mb-2">{title}</div>
             <ul className="space-y-1">
                 {items.map(item => <li key={item} className="text-xs text-white/55 leading-relaxed">{item}</li>)}
-            </ul>
-        </div>
-    );
-}
-
-function ModuleInfo({ title, items, tone }: { title: string; items: string[]; tone: 'emerald' | 'purple' }) {
-    const toneClass = tone === 'emerald' ? 'text-emerald-300/80' : 'text-purple-300/80';
-    return (
-        <div className="rounded-lg border border-white/10 bg-black/15 p-4">
-            <div className={`text-[11px] uppercase tracking-wider font-semibold mb-3 ${toneClass}`}>{title}</div>
-            <ul className="space-y-2">
-                {items.map(item => (
-                    <li key={item} className="flex gap-2 text-sm text-white/60 leading-relaxed">
-                        <ListChecks className="mt-0.5 h-4 w-4 shrink-0 text-white/30" />
-                        <span>{item}</span>
-                    </li>
-                ))}
             </ul>
         </div>
     );
@@ -759,7 +769,7 @@ function TopTabs({
                                 {option.ready && <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 text-[10px] text-emerald-300">Ready</span>}
                                 {isEnabled && <span className="rounded-full bg-purple-400/15 px-2 py-0.5 text-[10px] text-purple-200">Included</span>}
                             </span>
-                            <span className="block text-[11px] text-white/40 mt-1">Independent engine</span>
+                            <span className="block text-[11px] text-white/40 mt-1">Separate flow</span>
                         </button>
                     );
                 })}
