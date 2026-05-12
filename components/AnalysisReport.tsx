@@ -42,6 +42,18 @@ interface AnalysisData {
 
 const REPORT_SECTION_COUNT = 14;
 
+function readOptionalModuleInputs(): Record<string, string> {
+    const storedInputs = localStorage.getItem('optionalModuleInputs');
+    if (!storedInputs) return {};
+
+    try {
+        const parsed = JSON.parse(storedInputs);
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+        return {};
+    }
+}
+
 export default function AnalysisReport({ data, preferences, onPreferencesChange }: AnalysisReportProps) {
     const [report, setReport] = useState<AnalysisData | null>(null);
     const [loading, setLoading] = useState(false);
@@ -75,6 +87,8 @@ export default function AnalysisReport({ data, preferences, onPreferencesChange 
         setVisibleSections(0);
     };
 
+    const selectedSystem = ANALYSIS_SYSTEM_OPTIONS.find(option => option.id === preferences.analysisSystem) ?? ANALYSIS_SYSTEM_OPTIONS[0];
+
     const generateAnalysis = async () => {
         setLoading(true);
         setError('');
@@ -82,7 +96,11 @@ export default function AnalysisReport({ data, preferences, onPreferencesChange 
             const res = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chartData: data, preferences })
+                body: JSON.stringify({
+                    chartData: data,
+                    preferences,
+                    optionalModuleInputs: readOptionalModuleInputs(),
+                })
             });
 
             if (!res.ok) {
@@ -150,31 +168,31 @@ export default function AnalysisReport({ data, preferences, onPreferencesChange 
                             <p className="text-sm text-white/45">Choose the reading lens before generating the full report.</p>
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {ANALYSIS_SYSTEM_OPTIONS.map(option => (
-                            <label
-                                key={option.id}
-                                className={`rounded-lg border p-3 cursor-pointer transition-colors ${preferences.analysisSystem === option.id
-                                    ? 'border-indigo-400/70 bg-indigo-500/15'
-                                    : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.06]'
-                                    }`}
+
+                    <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-4">
+                        <label className="space-y-2">
+                            <span className="text-xs uppercase tracking-wider text-white/45 font-semibold">Choose system</span>
+                            <select
+                                value={preferences.analysisSystem}
+                                onChange={event => updateAnalysisSystem(event.target.value as AnalysisSystem)}
+                                className="glass-input w-full bg-black/50 [color-scheme:dark]"
                             >
-                                <div className="flex gap-3">
-                                    <input
-                                        type="radio"
-                                        name="analysisSystem"
-                                        className="mt-1 accent-indigo-500"
-                                        checked={preferences.analysisSystem === option.id}
-                                        onChange={() => updateAnalysisSystem(option.id)}
-                                    />
-                                    <span>
-                                        <span className="block text-sm font-semibold text-white/85">{option.label}</span>
-                                        <span className="block text-xs text-white/45 leading-relaxed">{option.description}</span>
-                                    </span>
-                                </div>
-                            </label>
-                        ))}
+                                {ANALYSIS_SYSTEM_OPTIONS.map(option => (
+                                    <option key={option.id} value={option.id}>{option.label}</option>
+                                ))}
+                            </select>
+                        </label>
+
+                        <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+                            <div className="text-[11px] uppercase tracking-wider text-indigo-300/80 font-semibold mb-2">Selected Lens</div>
+                            <h3 className="text-base font-semibold text-white/90">{selectedSystem.label}</h3>
+                            <p className="text-sm text-white/60 leading-relaxed mt-2">{selectedSystem.description}</p>
+                            <p className="text-xs text-white/40 leading-relaxed mt-3">
+                                If this system needs calculations not yet present in the app, the report will state the limitation and use the supported chart data instead of pretending the missing engine exists.
+                            </p>
+                        </div>
                     </div>
+
                     {preferences.optionalFeatures.length > 0 && (
                         <div className="mt-4 rounded-lg border border-white/10 bg-black/10 p-3">
                             <p className="text-xs uppercase tracking-wider text-white/40 font-semibold mb-2">Requested optional modules</p>
