@@ -137,9 +137,9 @@ export default function BirthForm() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-                <div className="space-y-2">
+                <div className="min-w-0 space-y-2">
                     <label className="text-xs uppercase tracking-wider text-white/50 font-semibold ml-1">Your Name</label>
-                    <div className="relative">
+                    <div className="relative min-w-0">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <Sparkles className="h-4 w-4 text-white/40" />
                         </div>
@@ -154,32 +154,32 @@ export default function BirthForm() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    <div className="space-y-2">
+                <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                    <div className="min-w-0 space-y-2">
                         <label className="text-xs uppercase tracking-wider text-white/50 font-semibold ml-1">Birth Date <span className="text-amber-300">*</span></label>
-                        <div className="relative">
+                        <div className="relative min-w-0">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Calendar className="h-4 w-4 text-white/40" />
                             </div>
                             <input
                                 type="date"
                                 name="dateString"
-                                className="glass-input w-full pl-10 [color-scheme:dark]"
+                                className="glass-input pl-10 pr-3 [color-scheme:dark]"
                                 value={formData.dateString}
                                 onChange={handleChange}
                             />
                         </div>
                     </div>
-                    <div className="space-y-2">
+                    <div className="min-w-0 space-y-2">
                         <label className="text-xs uppercase tracking-wider text-white/50 font-semibold ml-1">Birth Time <span className="text-amber-300">*</span></label>
-                        <div className="relative">
+                        <div className="relative min-w-0">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Clock className="h-4 w-4 text-white/40" />
                             </div>
                             <input
                                 type="time"
                                 name="timeString"
-                                className="glass-input w-full pl-10 [color-scheme:dark]"
+                                className="glass-input pl-10 pr-3 [color-scheme:dark]"
                                 value={formData.timeString}
                                 onChange={handleChange}
                             />
@@ -188,8 +188,8 @@ export default function BirthForm() {
                 </div>
 
                 {/* Location Search Section */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    <div className="space-y-2">
+                <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                    <div className="min-w-0 space-y-2">
                         <label className="text-xs uppercase tracking-wider text-white/50 font-semibold ml-1">Birth City <span className="text-amber-300">*</span></label>
                         <input
                             type="text"
@@ -200,7 +200,7 @@ export default function BirthForm() {
                             onChange={handleChange}
                         />
                     </div>
-                    <div className="space-y-2">
+                    <div className="min-w-0 space-y-2">
                         <label className="text-xs uppercase tracking-wider text-white/50 font-semibold ml-1">Country <span className="text-amber-300">*</span></label>
                         <input
                             type="text"

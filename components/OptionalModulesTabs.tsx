@@ -519,7 +519,7 @@ export default function OptionalModulesTabs() {
                             {Object.entries(groupedFields(definition.fields)).map(([section, fields]) => (
                                 <div key={section}>
                                     <h4 className="mb-3 text-xs uppercase tracking-wider text-white/40 font-semibold">{section}</h4>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
                                         {fields.map(field => (
                                             <ModuleFieldControl
                                                 key={field.id}
@@ -596,11 +596,11 @@ function ModuleFieldControl({
             {field.required && <span className="text-amber-300"> *</span>}
         </span>
     );
-    const inputClass = `glass-input w-full ${hasError ? 'border-amber-300/50 ring-1 ring-amber-300/30' : ''}`;
+    const inputClass = `glass-input ${hasError ? 'border-amber-300/50 ring-1 ring-amber-300/30' : ''}`;
 
     if (field.type === 'textarea') {
         return (
-            <label className="space-y-1 md:col-span-2">
+            <label className="min-w-0 space-y-1 md:col-span-2">
                 {commonLabel}
                 <textarea className={`${inputClass} min-h-24 resize-y`} placeholder={field.placeholder} value={value} onChange={event => onChange(module, field.id, event.target.value)} />
                 {field.helper && <span className="block text-[11px] text-white/35">{field.helper}</span>}
@@ -611,7 +611,7 @@ function ModuleFieldControl({
 
     if (field.type === 'select') {
         return (
-            <label className="space-y-1">
+            <label className="min-w-0 space-y-1">
                 {commonLabel}
                 <select className={`${inputClass} bg-black/50 [color-scheme:dark]`} value={value} onChange={event => onChange(module, field.id, event.target.value)}>
                     <option value="">Select</option>
@@ -624,7 +624,7 @@ function ModuleFieldControl({
     }
 
     return (
-        <label className="space-y-1">
+        <label className="min-w-0 space-y-1">
             {commonLabel}
             <input
                 type={field.type ?? 'text'}

@@ -56,8 +56,15 @@
     background-attachment: fixed;
   }
 
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
 }
 
@@ -67,7 +74,28 @@
   }
 
   .glass-input {
-    @apply bg-white/5 border border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:outline-none transition-all placeholder:text-white/20;
+    @apply block w-full min-w-0 max-w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:outline-none transition-all placeholder:text-white/20;
+    font-size: 16px;
+  }
+
+  .glass-input[type="date"],
+  .glass-input[type="time"] {
+    appearance: none;
+    -webkit-appearance: none;
+    inline-size: 100%;
+    max-inline-size: 100%;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .glass-input::-webkit-date-and-time-value {
+    min-width: 0;
+    text-align: left;
+  }
+
+  .glass-input::-webkit-calendar-picker-indicator {
+    flex: 0 0 auto;
+    margin: 0;
   }
 
   .heading-gradient {
