@@ -85,7 +85,7 @@ export default function ChatInterface({ chartData }: ChatInterfaceProps) {
 
             {/* Chat Window */}
             <div
-                className={`fixed bottom-6 right-6 w-full md:w-[400px] h-[500px] glass-card flex flex-col z-50 transition-all duration-300 transform origin-bottom-right ${isOpen ? 'scale-100 opacity-100 pointer-events-auto' : 'scale-90 opacity-0 pointer-events-none'
+                className={`fixed left-3 right-3 bottom-3 h-[min(500px,calc(100dvh-1.5rem))] md:left-auto md:right-6 md:bottom-6 md:w-[400px] glass-card flex flex-col z-50 transition-all duration-300 transform origin-bottom-right ${isOpen ? 'scale-100 opacity-100 pointer-events-auto' : 'scale-90 opacity-0 pointer-events-none'
                     }`}
             >
                 <header className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5 rounded-t-xl">

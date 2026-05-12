@@ -1,0 +1,74 @@
+[
+  {
+    "id": "kundli_matching_independent_inputs",
+    "category": "optional_module",
+    "module": "kundli_matching",
+    "description": "Kundli Matching must collect both people's details and not depend on the main birth-chart flow.",
+    "input": {
+      "native_date": "1993-08-15",
+      "native_time": "10:30",
+      "native_city": "New Delhi",
+      "native_country": "India",
+      "partner_date": "1994-02-20",
+      "partner_time": "14:15",
+      "partner_city": "Mumbai",
+      "partner_country": "India",
+      "relationship_stage": "Prospective match"
+    },
+    "expected": {
+      "requiredResultKeys": ["title", "summary", "score", "scores", "insights", "limitations", "nextSteps"],
+      "scoreMax": 36,
+      "locationHiddenFromUi": true
+    },
+    "forbidden": [
+      "depends on main birth chart",
+      "enter latitude",
+      "enter longitude",
+      "guaranteed marriage"
+    ]
+  },
+  {
+    "id": "panchang_date_window_validation",
+    "category": "optional_module",
+    "module": "panchang_muhurta",
+    "description": "Panchang & Muhurat should reject an end date before the start date and avoid exact muhurta overclaims.",
+    "input": {
+      "activity": "Marriage",
+      "start_date": "2026-06-15",
+      "end_date": "2026-06-01",
+      "event_city": "New Delhi",
+      "event_country": "India"
+    },
+    "expected": {
+      "validationError": "End date must be on or after start date"
+    },
+    "forbidden": [
+      "exact final muhurta",
+      "guaranteed auspicious",
+      "no expert review needed"
+    ]
+  },
+  {
+    "id": "dosha_plain_language_result",
+    "category": "optional_module",
+    "module": "dosha_analysis",
+    "description": "Dosha output should explain caution signals without fear-based or deterministic claims.",
+    "input": {
+      "native_date": "1993-08-15",
+      "native_time": "10:30",
+      "native_city": "New Delhi",
+      "native_country": "India",
+      "dosha_type": "Manglik"
+    },
+    "expected": {
+      "resultContains": ["Dosha", "What This Means", "Keep In Mind"],
+      "tone": "non_fatalistic"
+    },
+    "forbidden": [
+      "ruin your life",
+      "never marry",
+      "certain divorce",
+      "dangerous curse"
+    ]
+  }
+]

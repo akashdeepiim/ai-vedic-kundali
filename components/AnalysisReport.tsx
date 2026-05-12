@@ -23,6 +23,13 @@ interface TimelineEvent {
     description: string;
 }
 
+interface PdfBlock {
+    kind: 'meta' | 'section' | 'subsection' | 'body' | 'note' | 'spacer';
+    text?: string;
+    label?: string;
+    value?: string;
+}
+
 interface AnalysisData {
     preliminary: string;
     career: string;
@@ -121,7 +128,7 @@ export default function AnalysisReport({ data, preferences, onPreferencesChange 
         const pdfBytes = createReportPdf({
             title: `Vedic Astra Report${data.birthDetails.name ? ` - ${data.birthDetails.name}` : ''}`,
             subtitle: `${data.birthDetails.dateString} ${data.birthDetails.timeString} | ${getAnalysisSystemLabel(preferences.analysisSystem)}`,
-            lines: buildPdfLines(report, data, preferences),
+            blocks: buildPdfBlocks(report, data, preferences),
         });
         const pdfBuffer = new ArrayBuffer(pdfBytes.byteLength);
         new Uint8Array(pdfBuffer).set(pdfBytes);
@@ -159,8 +166,8 @@ export default function AnalysisReport({ data, preferences, onPreferencesChange 
 
     if (!report) {
         return (
-            <div className="space-y-6 py-8">
-                <div className="glass-card p-6 border-l-4 border-indigo-500">
+            <div className="space-y-5 py-5 sm:space-y-6 sm:py-8">
+                <div className="glass-card p-4 border-l-4 border-indigo-500 sm:p-6">
                     <div className="flex items-center gap-2 mb-4">
                         <Settings2 className="h-5 w-5 text-indigo-300" />
                         <div>
@@ -184,18 +191,18 @@ export default function AnalysisReport({ data, preferences, onPreferencesChange 
                         </label>
 
                         <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
-                            <div className="text-[11px] uppercase tracking-wider text-indigo-300/80 font-semibold mb-2">Selected Lens</div>
+                            <div className="text-[11px] uppercase tracking-wider text-indigo-300/80 font-semibold mb-2">Selected Reading Style</div>
                             <h3 className="text-base font-semibold text-white/90">{selectedSystem.label}</h3>
                             <p className="text-sm text-white/60 leading-relaxed mt-2">{selectedSystem.description}</p>
                             <p className="text-xs text-white/40 leading-relaxed mt-3">
-                                If this system needs calculations not yet present in the app, the report will state the limitation and use the supported chart data instead of pretending the missing engine exists.
+                                The report will only make claims that can be supported by the chart data available here.
                             </p>
                         </div>
                     </div>
 
                     {preferences.optionalFeatures.length > 0 && (
                         <div className="mt-4 rounded-lg border border-white/10 bg-black/10 p-3">
-                            <p className="text-xs uppercase tracking-wider text-white/40 font-semibold mb-2">Requested optional modules</p>
+                            <p className="text-xs uppercase tracking-wider text-white/40 font-semibold mb-2">Included readings</p>
                             <div className="flex flex-wrap gap-2">
                                 {preferences.optionalFeatures.map(feature => (
                                     <span key={feature} className="rounded-full bg-white/10 px-3 py-1 text-xs text-white/70">
@@ -211,15 +218,15 @@ export default function AnalysisReport({ data, preferences, onPreferencesChange 
                 <button
                     onClick={generateAnalysis}
                     disabled={loading}
-                    className="group relative inline-flex items-center justify-center px-8 py-4 font-bold text-white transition-all duration-200 bg-transparent font-pj rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
+                    className="group relative inline-flex w-full max-w-sm items-center justify-center px-2 py-2 font-bold text-white transition-all duration-200 bg-transparent font-pj rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 sm:w-auto sm:max-w-none sm:px-8 sm:py-4"
                     role="button"
                 >
                     <div className="absolute inset-0 w-full h-full -mt-1 rounded-lg opacity-30 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 blur-lg group-hover:opacity-100 transition-opacity duration-200 animate-pulse"></div>
-                    <span className="relative flex items-center gap-2 bg-black/50 border border-white/20 backdrop-blur-xl px-6 py-3 rounded-lg hover:bg-black/70 transition-colors">
-                        {loading ? 'Consulting the Stars...' : (
+                    <span className="relative flex w-full items-center justify-center gap-2 bg-black/50 border border-white/20 backdrop-blur-xl px-4 py-3 rounded-lg hover:bg-black/70 transition-colors sm:w-auto sm:px-6">
+                        {loading ? 'Preparing your report...' : (
                             <>
                                 <Sparkles className="w-5 h-5 text-yellow-300" />
-                                Reveal Detailed Life Analysis & Future Outlook
+                                Generate Full Analysis Report
                             </>
                         )}
                     </span>
@@ -254,21 +261,15 @@ export default function AnalysisReport({ data, preferences, onPreferencesChange 
             return <p className="text-white/80 leading-relaxed whitespace-pre-line text-sm md:text-base">{text}</p>;
         }
 
-        const basisStart = basisMatch.index + basisMatch[0].length;
         const insightStart = insightMatch.index + insightMatch[0].length;
         const preface = text.slice(0, basisMatch.index).trim();
-        const basis = text.slice(basisStart, insightMatch.index).trim();
         const insight = text.slice(insightStart).trim();
 
         return (
             <div className="space-y-4 text-sm md:text-base">
                 {preface && <p className="text-white/70 leading-relaxed whitespace-pre-line">{preface}</p>}
-                <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
-                    <div className="text-[11px] uppercase tracking-wider text-white/40 font-semibold mb-2">Chart Basis</div>
-                    <p className="text-white/75 leading-relaxed whitespace-pre-line">{basis}</p>
-                </div>
                 <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/[0.05] p-4">
-                    <div className="text-[11px] uppercase tracking-wider text-emerald-300/80 font-semibold mb-2">Usable Insight</div>
+                    <div className="text-[11px] uppercase tracking-wider text-emerald-300/80 font-semibold mb-2">Meaning For You</div>
                     <p className="text-white/85 leading-relaxed whitespace-pre-line">{insight}</p>
                 </div>
             </div>
@@ -543,61 +544,60 @@ function wrapText(text: string, width = 92): string[] {
     return lines;
 }
 
-function pushSection(lines: string[], title: string, body: string) {
-    lines.push('');
-    lines.push(title.toUpperCase());
-    lines.push(...wrapText(body));
+function pushSection(blocks: PdfBlock[], title: string, body: string) {
+    blocks.push({ kind: 'section', text: title });
+    blocks.push({ kind: 'body', text: body });
 }
 
-function buildPdfLines(report: AnalysisData, data: KundaliResult, preferences: AnalysisPreferences): string[] {
-    const lines = [
-        `Name: ${data.birthDetails.name || 'Not provided'}`,
-        `Birth: ${data.birthDetails.dateString} ${data.birthDetails.timeString}`,
-        `System: ${getAnalysisSystemLabel(preferences.analysisSystem)}`,
-        `Chart style: ${preferences.chartStyle}`,
-        `Current dasha: ${data.dasha.current || 'Not available'}`,
-        `Transits: ${data.transits.summary.join('; ')}`,
+function buildPdfBlocks(report: AnalysisData, data: KundaliResult, preferences: AnalysisPreferences): PdfBlock[] {
+    const blocks: PdfBlock[] = [
+        { kind: 'meta', label: 'Name', value: data.birthDetails.name || 'Not provided' },
+        { kind: 'meta', label: 'Birth', value: `${data.birthDetails.dateString} ${data.birthDetails.timeString}` },
+        { kind: 'meta', label: 'Reading style', value: getAnalysisSystemLabel(preferences.analysisSystem) },
+        { kind: 'meta', label: 'Chart layout', value: preferences.chartStyle },
+        { kind: 'meta', label: 'Current period', value: data.dasha.current || 'Not available' },
     ];
 
     if (preferences.optionalFeatures.length > 0) {
-        lines.push(`Optional modules requested: ${preferences.optionalFeatures.map(getOptionalFeatureLabel).join(', ')}`);
+        blocks.push({ kind: 'meta', label: 'Included readings', value: preferences.optionalFeatures.map(getOptionalFeatureLabel).join(', ') });
     }
 
-    pushSection(lines, 'Prarabdha and Personality', report.preliminary);
-    pushSection(lines, 'Career and Profession', report.career);
-    pushSection(lines, 'Wealth and Finance', report.wealth);
-    pushSection(lines, 'Health and Well-being', report.health);
-    pushSection(lines, 'Family and Home', report.family);
-    pushSection(lines, 'Passion and Hobbies', report.passion);
-    pushSection(lines, 'Love and Relationships', report.love);
-    pushSection(lines, 'Marriage and Spouse', report.marriage);
-    pushSection(lines, 'Daily Outlook', report.today);
-    pushSection(lines, 'Weekly Forecast', report.week);
-    pushSection(lines, 'Monthly Overview', report.month);
-    pushSection(lines, 'Yearly Projection', report.year);
+    blocks.push({ kind: 'spacer' });
+    pushSection(blocks, 'Prarabdha and Personality', report.preliminary);
+    pushSection(blocks, 'Career and Profession', report.career);
+    pushSection(blocks, 'Wealth and Finance', report.wealth);
+    pushSection(blocks, 'Health and Well-being', report.health);
+    pushSection(blocks, 'Family and Home', report.family);
+    pushSection(blocks, 'Passion and Hobbies', report.passion);
+    pushSection(blocks, 'Love and Relationships', report.love);
+    pushSection(blocks, 'Marriage and Spouse', report.marriage);
+    pushSection(blocks, 'Daily Outlook', report.today);
+    pushSection(blocks, 'Weekly Forecast', report.week);
+    pushSection(blocks, 'Monthly Overview', report.month);
+    pushSection(blocks, 'Yearly Projection', report.year);
 
     if (report.past_timeline?.length) {
-        lines.push('');
-        lines.push('PAST WINDOWS TO VERIFY');
+        blocks.push({ kind: 'section', text: 'Past Windows To Verify' });
         report.past_timeline.forEach(item => {
-            lines.push(`${item.year} - ${item.title}`);
-            lines.push(...wrapText(item.description));
+            blocks.push({ kind: 'subsection', text: `${item.year} - ${item.title}` });
+            blocks.push({ kind: 'body', text: item.description });
         });
     }
 
     if (report.timeline?.length) {
-        lines.push('');
-        lines.push('FUTURE WINDOWS TIMELINE');
+        blocks.push({ kind: 'section', text: 'Future Windows Timeline' });
         report.timeline.forEach(item => {
-            lines.push(`${item.year} - ${item.title}`);
-            lines.push(...wrapText(item.description));
+            blocks.push({ kind: 'subsection', text: `${item.year} - ${item.title}` });
+            blocks.push({ kind: 'body', text: item.description });
         });
     }
 
-    lines.push('');
-    lines.push('Calculation note: This report uses the app chart data and current transit snapshot. Methods requiring dedicated engines, such as KP cusps, full Panchang, Muhurta search, Shadbala, Ashtakavarga, and rule-based Yoga/Dosha detection, are not treated as fully calculated unless explicitly present.');
+    blocks.push({
+        kind: 'note',
+        text: 'Reading note: This report is a guided astrology interpretation based on the available chart data. Use it for reflection and planning, not as a substitute for professional, medical, legal, financial, or safety advice.',
+    });
 
-    return lines;
+    return blocks;
 }
 
 function escapePdfText(text: string): string {
@@ -608,19 +608,76 @@ function escapePdfText(text: string): string {
         .replace(/[^\x20-\x7E]/g, '');
 }
 
-function createReportPdf({ title, subtitle, lines }: { title: string; subtitle: string; lines: string[] }): Uint8Array {
-    const pageLineCount = 42;
-    const pages: string[][] = [];
-    let current: string[] = [];
+function createReportPdf({ title, subtitle, blocks }: { title: string; subtitle: string; blocks: PdfBlock[] }): Uint8Array {
+    const pageHeight = 842;
+    const marginX = 48;
+    const bottomY = 56;
+    const contentWidth = 88;
+    const pages: string[][] = [[]];
+    let y = 790;
 
-    lines.forEach(line => {
-        if (current.length >= pageLineCount) {
-            pages.push(current);
-            current = [];
+    const currentPage = () => pages[pages.length - 1];
+    const newPage = () => {
+        pages.push([]);
+        y = 790;
+    };
+    const ensureSpace = (needed: number) => {
+        if (y - needed < bottomY) newPage();
+    };
+    const drawText = (text: string, x: number, currentY: number, size: number, font = 'F1') => {
+        currentPage().push(`BT /${font} ${size} Tf ${x} ${currentY} Td (${escapePdfText(text)}) Tj ET`);
+    };
+    const drawWrapped = (text: string, size: number, lineHeight: number, font = 'F1', width = contentWidth) => {
+        const lines = wrapText(text, width);
+        ensureSpace(lines.length * lineHeight + 6);
+        lines.forEach(line => {
+            drawText(line, marginX, y, size, font);
+            y -= lineHeight;
+        });
+        y -= 4;
+    };
+
+    drawText(title, marginX, y, 18, 'F2');
+    y -= 20;
+    drawText(subtitle, marginX, y, 10, 'F1');
+    y -= 26;
+
+    blocks.forEach(block => {
+        if (block.kind === 'spacer') {
+            y -= 8;
+            return;
         }
-        current.push(line);
+
+        if (block.kind === 'meta') {
+            ensureSpace(16);
+            drawText(`${block.label}: ${block.value}`, marginX, y, 10, 'F1');
+            y -= 14;
+            return;
+        }
+
+        if (block.kind === 'section') {
+            ensureSpace(34);
+            y -= 8;
+            drawText(block.text ?? '', marginX, y, 13, 'F2');
+            y -= 18;
+            return;
+        }
+
+        if (block.kind === 'subsection') {
+            ensureSpace(24);
+            drawText(block.text ?? '', marginX, y, 10, 'F2');
+            y -= 14;
+            return;
+        }
+
+        if (block.kind === 'note') {
+            y -= 6;
+            drawWrapped(block.text ?? '', 9, 12, 'F1', 92);
+            return;
+        }
+
+        drawWrapped(block.text ?? '', 10, 13);
     });
-    if (current.length) pages.push(current);
 
     const objects: string[] = [];
     const addObject = (body: string) => {
@@ -631,32 +688,20 @@ function createReportPdf({ title, subtitle, lines }: { title: string; subtitle: 
     const catalogId = addObject('<< /Type /Catalog /Pages 2 0 R >>');
     const pageIds: number[] = [];
     const fontId = 3;
+    const boldFontId = 4;
 
     addObject(''); // Pages placeholder
     addObject('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+    addObject('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
 
-    pages.forEach((pageLines, index) => {
+    pages.forEach((pageCommands, index) => {
         const commands = [
-            'BT',
-            '/F1 16 Tf',
-            '50 790 Td',
-            `(${escapePdfText(title)}) Tj`,
-            '/F1 9 Tf',
-            '0 -16 Td',
-            `(${escapePdfText(subtitle)}) Tj`,
-            '0 -18 Td',
-            `(${escapePdfText(`Page ${index + 1} of ${pages.length}`)}) Tj`,
-            '/F1 10 Tf',
-            '0 -24 Td',
-            ...pageLines.flatMap(line => [
-                `(${escapePdfText(line)}) Tj`,
-                '0 -13 Td',
-            ]),
-            'ET',
+            ...pageCommands,
+            `BT /F1 8 Tf ${marginX} 28 Td (${escapePdfText(`Page ${index + 1} of ${pages.length}`)}) Tj ET`,
         ].join('\n');
 
         const contentId = addObject(`<< /Length ${commands.length} >>\nstream\n${commands}\nendstream`);
-        const pageId = addObject(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${contentId} 0 R >>`);
+        const pageId = addObject(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 ${pageHeight}] /Resources << /Font << /F1 ${fontId} 0 R /F2 ${boldFontId} 0 R >> >> /Contents ${contentId} 0 R >>`);
         pageIds.push(pageId);
     });
 

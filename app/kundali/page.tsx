@@ -101,18 +101,20 @@ export default function KundaliResultPage() {
         });
     };
 
+    const selectedChartStyle = CHART_STYLE_OPTIONS.find(option => option.id === preferences.chartStyle) ?? CHART_STYLE_OPTIONS[0];
+
     return (
-        <div className="min-h-screen p-4 md:p-8 space-y-8 max-w-7xl mx-auto pb-20">
-            <header className="flex items-center justify-between border-b border-white/10 pb-4">
+        <div className="min-h-screen p-3 sm:p-4 md:p-8 space-y-5 sm:space-y-8 max-w-7xl mx-auto pb-20">
+            <header className="flex items-start justify-between gap-3 border-b border-white/10 pb-4">
                 <div>
-                    <h1 className="text-3xl font-bold heading-gradient">Vedic Horoscope</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold heading-gradient">Vedic Horoscope</h1>
                     <p className="text-white/50 text-sm">
                         {data.birthDetails.name && <span>{data.birthDetails.name} · </span>}
                         {data.birthDetails.dateString} at {data.birthDetails.timeString}
-                        {data.age !== undefined && <span className="ml-2 text-white/30">(Age: {data.age})</span>}
+                        {data.age !== undefined && <span className="block text-white/30 sm:ml-2 sm:inline">(Age: {data.age})</span>}
                     </p>
                 </div>
-                <button onClick={() => router.push('/')} className="text-xs text-primary hover:underline">New Chart</button>
+                <button onClick={() => router.push('/')} className="shrink-0 text-xs text-primary hover:underline">New Chart</button>
             </header>
 
             {/* Current Dasha banner */}
@@ -132,18 +134,34 @@ export default function KundaliResultPage() {
                         <p key={item}>{item}</p>
                     ))}
                 </div>
-                <p className="text-[11px] text-white/35 mt-3">
-                    Method: {data.metadata.houseSystem}, {data.metadata.nodeType}, {data.metadata.ayanamsaModel}. These calculations still need golden-test validation before they should be treated as professional-grade astrology.
-                </p>
+                <details className="mt-3 text-[11px] text-white/35">
+                    <summary className="cursor-pointer text-white/45 hover:text-white/65">Calculation method</summary>
+                    <p className="mt-2">
+                        {data.metadata.houseSystem}, {data.metadata.nodeType}, {data.metadata.ayanamsaModel}. Use this chart as a guided reading and confirm high-stakes decisions with a qualified professional.
+                    </p>
+                </details>
             </div>
 
-            <div className="glass-card p-4">
+            <div className="glass-card p-3 sm:p-4">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
                         <h2 className="text-sm font-semibold text-white/85">Chart Layout Style</h2>
-                        <p className="text-xs text-white/45">Switch the visual layout without recalculating the chart.</p>
+                        <p className="hidden text-xs text-white/45 sm:block">Switch the visual layout without recalculating the chart.</p>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
+                    <label className="sm:hidden">
+                        <span className="sr-only">Chart layout style</span>
+                        <select
+                            value={preferences.chartStyle}
+                            onChange={event => updateChartStyle(event.target.value as ChartLayoutStyle)}
+                            className="glass-input h-10 w-full bg-black/50 text-sm [color-scheme:dark]"
+                        >
+                            {CHART_STYLE_OPTIONS.map(option => (
+                                <option key={option.id} value={option.id}>{option.label}</option>
+                            ))}
+                        </select>
+                        <span className="mt-1 block text-[11px] text-white/35">{selectedChartStyle.description}</span>
+                    </label>
+                    <div className="hidden grid-cols-3 gap-2 sm:grid">
                         {CHART_STYLE_OPTIONS.map(option => (
                             <button
                                 key={option.id}
